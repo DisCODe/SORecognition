@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Task>
+	<!-- reference task information -->
+	<Reference>
+		<Author>
+                        <name>Tomasz Kornuta</name>
+			<link></link>
+		</Author>
+		
+		<Description>
+                        <brief>Test for displaying scene along with objects</brief>
+                        <full>PCL viewer displaying scene loaded from RGB-D images along with SOMs (SIFT Object Models) loaded from JSON files.</full>
+		</Description>
+	</Reference>
+	
+	<!-- task definition -->
+	<Subtasks>
+		<Subtask name="Processing">
+			<Executor name="Exec1"  period="0.1">
+
+                            <!--Scene-->
+                            <Component name="CameraInfo" type="CvCoreTypes:CameraInfoProvider" priority="1" bump="0">
+                                <param name="width">640</param>
+                                <param name="height">480</param>
+                                <param name="camera_matrix">525 0 319.5 ; 0 525 239.5 ; 0 0 1</param>
+                                <param name="dist_coeffs">0.18126525 -0.39866885 0.00000000 0.00000000 0.00000000</param>
+                            </Component>
+
+                            <Component name="NextImageTrigger" type="CvBasic:Trigger" priority="2" bump="0">
+                                <param name="auto_trigger">1</param>
+                            </Component>
+
+                            <Component name="RGBSequence" type="CvBasic:Sequence" priority="3" bump="-1">
+                                <param name="sequence.directory">/home/mlaszkow/DCL/ecovi/data/ahmad/</param>
+                                <param name="sequence.pattern">.*_rgb.png</param>
+                                <param name="mode.loop">1</param>
+                                <param name="mode.auto_next_image">0</param>
+                            </Component>
+
+                            <Component name="DepthSequence" type="CvBasic:Sequence" priority="4" bump="-1">
+                                <param name="sequence.directory">/home/mlaszkow/DCL/ecovi/data/ahmad/</param>
+                                <param name="sequence.pattern">.*_depth.png</param>
+                                <param name="mode.loop">1</param>
+                                <param name="mode.auto_next_image">0</param>
+                            </Component>
+
+                            <!--Models-->
+                            <Component name="SOMJSONReader" type="SIFTObjectModel:SOMJSONReader" priority="10" bump="0">
+                                    <param name="filenames">/home/mlaszkow/DCL/TexturedSolidGeneration/data/ahmad1.json</param>
+                            </Component>
+
+                            <!--Processing-->
+                            <Component name="SIFT" type="CvBasic:CvSIFT" priority="20" bump="0">
+                            </Component>
+
+                            <Component name="Converter" type="PCL:DepthConverter" priority="21" bump="0">
+                            </Component>
+
+                            <Component name="FeatureCloudConverter" type="SIFTObjectModel:FeatureCloudConverter" priority="22" bump="0">
+                            </Component>
+
+                        </Executor>
+		</Subtask>
+		
+		<Subtask name="Visualisation">
+                        <Executor name="Exec2" period="0.1">
+                                <Component name="Window" type="PCL:CloudViewer" priority="100" bump="0">
+                                    <param name="coordinate_system">false</param>
+				</Component>
+			</Executor>
+		</Subtask>
+	
+	</Subtasks>
+	
+	<!-- pipes connecting datastreams -->
+	<DataStreams>
+
+                <!--Scene-->
+                <Source name="CameraInfo.out_camera_info">
+                        <sink>Converter.in_camera_info</sink>
+                        <sink>FeatureCloudConverter.in_camera_info</sink>
+                </Source>
+
+                <Source name="NextImageTrigger.out_trigger">
+                        <sink>RGBSequence.in_next_image_trigger</sink>
+                        <sink>DepthSequence.in_next_image_trigger</sink>
+                </Source>
+
+                <Source name="RGBSequence.out_img">
+                        <sink>SIFT.in_img</sink>
+                        <sink>Converter.in_color</sink>
+                </Source>
+
+                <Source name="DepthSequence.out_img">
+                        <sink>Converter.in_depth</sink> <!--_xyz-->
+                        <sink>FeatureCloudConverter.in_depth</sink>
+                </Source>
+
+                <!--Proccesing-->
+                <Source name="SIFT.out_descriptors">
+                        <sink>FeatureCloudConverter.in_descriptors</sink>
+                </Source>
+
+                <Source name="SIFT.out_features">
+                        <sink>FeatureCloudConverter.in_features</sink>
+                </Source>
+
+                <Source name="Converter.out_cloud_xyzrgb">
+                        <sink>Window.in_scene_cloud_xyzrgb</sink>
+                </Source>
+
+                <Source name="FeatureCloudConverter.out_cloud_xyzsift">
+                        <sink>Window.in_scene_cloud_xyzsift</sink>
+                </Source>
+
+                <!--Models-->
+
+                <Source name="SOMJSONReader.out_model_clouds_xyzrgb">
+                        <sink>Window.in_om_clouds_xyzrgb</sink>
+                </Source>
+
+                <Source name="SOMJSONReader.out_model_clouds_xyzsift">
+                        <sink>Window.in_om_clouds_xyzsift</sink>
+                </Source>
+
+       </DataStreams>
+</Task>
+
+
+
+
