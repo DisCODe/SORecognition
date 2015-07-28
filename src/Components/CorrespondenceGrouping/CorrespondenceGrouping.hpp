@@ -111,6 +111,9 @@ protected:
 	/// Main handler - groups correspondences.
 	void groupCorrespondences();
 
+	/// Group correspondences between a single model and scene.
+	void groupSingleModelCorrespondences(pcl::PointCloud<PointXYZSIFT>::Ptr model_clouds_xyzsift_, pcl::PointCloud<PointXYZSIFT>::Ptr in_cloud_xyzsift_, pcl::CorrespondencesPtr model_scene_correspondences_);
+
 };
 
 } //: namespace CorrespondenceGrouping

@@ -75,6 +75,8 @@
                                 <param name="rejection.max_distance">0.01</param>
                             </Component>
 
+                            <Component name="CorrespondenceGrouping" type="SORecognition:CorrespondenceGrouping" priority="31" bump="0">
+                            </Component>
                         </Executor>
 		</Subtask>
 
@@ -134,30 +136,36 @@
 
                 <Source name="Converter.out_cloud_xyzrgb">
                         <sink>Viewer.in_scene_cloud_xyzrgb</sink>
+                        <sink>CorrespondenceGrouping.in_scene_cloud_xyzrgb</sink>
                 </Source>
 
                 <Source name="FeatureCloudConverter.out_cloud_xyzsift">
                         <sink>Viewer.in_scene_cloud_xyzsift</sink>
                         <sink>CorrespondenceEstimation.in_scene_cloud_xyzsift</sink><!---->
+                        <sink>CorrespondenceGrouping.in_scene_cloud_xyzsift</sink>
                 </Source>
 
                 <!--Models-->
 
                 <Source name="SOMJSONReader.out_model_clouds_xyzrgb">
                         <sink>Viewer.in_om_clouds_xyzrgb</sink>
+                        <sink>CorrespondenceGrouping.in_model_clouds_xyzrgb</sink>
                 </Source>
 
                 <Source name="SOMJSONReader.out_model_clouds_xyzsift">
                         <sink>Viewer.in_om_clouds_xyzsift</sink>
                         <sink>CorrespondenceEstimation.in_model_clouds_xyzsift</sink><!---->
+                        <sink>CorrespondenceGrouping.in_model_clouds_xyzsift</sink>
                 </Source>
 
                 <Source name="SOMJSONReader.out_model_corners_xyz">
                         <sink>Viewer.in_om_corners_xyz</sink>
+                        <sink>CorrespondenceGrouping.in_model_corners_xyz</sink>
                 </Source>
 
                 <Source name="CorrespondenceEstimation.out_models_scene_correspondences">
                         <sink>Viewer.in_models_scene_correspondences</sink>
+                        <sink>CorrespondenceGrouping.in_models_scene_correspondences</sink>
                 </Source> <!---->
 
 
