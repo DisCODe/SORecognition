@@ -86,7 +86,7 @@
 
 		<Subtask name="Visualisation">
                         <Executor name="Exec2" period="0.2">
-                                <Component name="Viewer" type="PCL:CloudViewer" priority="100" bump="0">
+                                <Component name="Viewer" type="PCL:CloudViewer" priority="100" bump="-10">
                                     <param name="coordinate_system">false</param>
 				</Component>
 			</Executor>

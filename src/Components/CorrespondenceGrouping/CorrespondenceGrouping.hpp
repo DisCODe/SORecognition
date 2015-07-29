@@ -112,7 +112,7 @@ protected:
 	void groupCorrespondences();
 
 	/// Group correspondences between a single model and scene.
-	void groupSingleModelCorrespondences(pcl::PointCloud<PointXYZSIFT>::Ptr model_clouds_xyzsift_, pcl::PointCloud<PointXYZSIFT>::Ptr in_cloud_xyzsift_, pcl::CorrespondencesPtr model_scene_correspondences_);
+	void groupSingleModelCorrespondences(pcl::PointCloud<PointXYZSIFT>::Ptr model_clouds_xyzsift_, pcl::PointCloud<PointXYZSIFT>::Ptr cloud_xyzsift_, pcl::CorrespondencesPtr model_scene_correspondences_);
 
 };
 
