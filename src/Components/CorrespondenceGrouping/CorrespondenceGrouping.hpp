@@ -76,8 +76,8 @@ protected:
 	/// Data stream with cloud of XYZ SIFTs.
 	Base::DataStreamIn<pcl::PointCloud<PointXYZSIFT>::Ptr, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_cloud_xyzsift;
 
-	/// Input data stream containing vector of object/model ids.
-	Base::DataStreamIn <std::vector< std::string>, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_model_ids;
+	/// Input data stream containing vector of object/model labels.
+	Base::DataStreamIn <std::vector< std::string>, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_model_labels;
 
 	/// Input data stream containing vector of XYZRGB clouds (objects/models).
 	Base::DataStreamIn <std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr>, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_model_clouds_xyzrgb;
@@ -92,27 +92,39 @@ protected:
 	Base::DataStreamIn<std::vector<pcl::CorrespondencesPtr>, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_models_scene_correspondences;
 
 
-	/// Output data stream containing vector of object ids.
-	Base::DataStreamOut <std::vector< std::string> > out_object_ids;
+	/// Output data stream containing vector of clusters (matched models) labels.
+	Base::DataStreamOut <std::vector< std::string> > out_cluster_labels;
 
-	/// Output data stream containing vector of object XYZRGB clouds.
-	Base::DataStreamOut <std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> > out_object_clouds_xyzrgb;
+	/// Output data stream containing vector of clusters (matched models) XYZRGB clouds.
+	Base::DataStreamOut <std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> > out_cluster_clouds_xyzrgb;
 
-	/// Output data stream containing vector of object XYZSIFT clouds.
-	Base::DataStreamOut <std::vector< pcl::PointCloud<PointXYZSIFT>::Ptr> > out_object_clouds_xyzsift;
+	/// Output data stream containing vector of clusters (matched models) XYZSIFT clouds.
+	Base::DataStreamOut <std::vector< pcl::PointCloud<PointXYZSIFT>::Ptr> > out_cluster_clouds_xyzsift;
 
-	/// Output data stream containing vector of object corners (each being a cloud containing 8 XYZ points).
-	Base::DataStreamOut <std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr> > out_object_corners_xyz;
+	/// Output data stream containing vector of clusters (matched models) corners (each being a cloud containing 8 XYZ points).
+	Base::DataStreamOut <std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr> > out_cluster_corners_xyz;
 
-	/// Output data stream containing vector of corespondences beetwen objects and scene clouds.
-	Base::DataStreamOut<std::vector<pcl::CorrespondencesPtr> > out_objects_scene_correspondences;
+	/// Output data stream containing vector of corespondences beetwen objects and scene clouds (clusters).
+	Base::DataStreamOut<std::vector<pcl::CorrespondencesPtr> > out_clusters_scene_correspondences;
+
+	/// Output data stream containing vector of poses of clusters (matched models).
+	Base::DataStreamOut<std::vector<Types::HomogMatrix> >  out_cluster_poses;
+
+
+	/// Property: the consensus set resolution, in metric units.
+	Base::Property<double> prop_cg_size;
+	/// Property: the minimum cluster size.
+	Base::Property<double> prop_cg_thresh;
 
 
 	/// Main handler - groups correspondences.
 	void groupCorrespondences();
 
 	/// Group correspondences between a single model and scene.
-	void groupSingleModelCorrespondences(pcl::PointCloud<PointXYZSIFT>::Ptr model_clouds_xyzsift_, pcl::PointCloud<PointXYZSIFT>::Ptr cloud_xyzsift_, pcl::CorrespondencesPtr model_scene_correspondences_);
+	void groupSingleModelCorrespondences(pcl::PointCloud<PointXYZSIFT>::Ptr model_clouds_xyzsift_, pcl::PointCloud<PointXYZSIFT>::Ptr cloud_xyzsift_, pcl::CorrespondencesPtr model_scene_correspondences_, std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > & cluster_poses_, std::vector<pcl::Correspondences> & cluster_correspondences_);
+
+	/// Displays vector of clusters.
+	void displayCorrespondencesGroups (std::vector<Types::HomogMatrix> cluster_poses_, std::vector<pcl::CorrespondencesPtr> cluster_correspondences_, std::vector<std::string> cluster_labels_);
 
 };
 

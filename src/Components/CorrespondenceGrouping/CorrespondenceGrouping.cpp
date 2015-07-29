@@ -19,8 +19,12 @@ namespace Processors {
 namespace CorrespondenceGrouping {
 
 CorrespondenceGrouping::CorrespondenceGrouping(const std::string & name) :
-		Base::Component(name)  {
-
+	Base::Component(name),
+	prop_cg_size("cluster_grouping.size", 0.01),
+	prop_cg_thresh("cluster_grouping.threshold", 5.0)
+{
+	registerProperty(prop_cg_size);
+	registerProperty(prop_cg_thresh);
 }
 
 CorrespondenceGrouping::~CorrespondenceGrouping() {
@@ -36,7 +40,7 @@ void CorrespondenceGrouping::prepareInterface() {
 	registerStream("in_scene_cloud_xyzsift", &in_cloud_xyzsift);
 
 	// Register cloud model input streams.
-	registerStream("in_model_ids", &in_model_ids);
+	registerStream("in_model_labels", &in_model_labels);
 	registerStream("in_model_clouds_xyzrgb", &in_model_clouds_xyzrgb);
 	registerStream("in_model_clouds_xyzsift", &in_model_clouds_xyzsift);
 	registerStream("in_model_corners_xyz", &in_model_corners_xyz);
@@ -44,23 +48,26 @@ void CorrespondenceGrouping::prepareInterface() {
 	// Register cloud model correspondences input streams.
 	registerStream("in_models_scene_correspondences", &in_models_scene_correspondences);
 
-	// Register obcjet cloud output streams.
-	registerStream("out_object_ids", &out_object_ids);
-	registerStream("out_object_clouds_xyzrgb", &out_object_clouds_xyzrgb);
-	registerStream("out_object_clouds_xyzsift", &out_object_clouds_xyzsift);
-	registerStream("out_object_corners_xyz", &out_object_corners_xyz);
+	// Register clusters (matched models) output streams.
+	registerStream("out_cluster_labels", &out_cluster_labels);
+	registerStream("out_cluster_clouds_xyzrgb", &out_cluster_clouds_xyzrgb);
+	registerStream("out_cluster_clouds_xyzsift", &out_cluster_clouds_xyzsift);
+	registerStream("out_cluster_corners_xyz", &out_cluster_corners_xyz);
+	registerStream("out_clusters_scene_correspondences", &out_clusters_scene_correspondences);
+	registerStream("out_cluster_poses", &out_cluster_poses);
 
 	// Register objects scene correspondences output streams.
-	registerStream("in_objects_scene_correspondences", &out_objects_scene_correspondences);
+	//registerStream("in_objects_scene_correspondences", &out_clusters_scene_correspondences);
 
 
 
 	registerHandler("groupCorrespondences", boost::bind(&CorrespondenceGrouping::groupCorrespondences, this));
-//	addDependency("groupCorrespondences", &in_model_ids);
+	addDependency("groupCorrespondences", &in_cloud_xyzsift);
 	addDependency("groupCorrespondences", &in_model_clouds_xyzrgb);
 	addDependency("groupCorrespondences", &in_model_clouds_xyzsift);
 	addDependency("groupCorrespondences", &in_model_corners_xyz);
 	addDependency("groupCorrespondences", &in_models_scene_correspondences);
+//	addDependency("groupCorrespondences", &in_model_labels);
 
 }
 
@@ -85,43 +92,113 @@ bool CorrespondenceGrouping::onStart() {
 void CorrespondenceGrouping::groupCorrespondences() {
 	CLOG(LTRACE) << "groupCorrespondences";
 
-	// This is executed when all required data streams are present - no need to check them!
-	// TODO MODEL ID's!
+	// This is executed when all required data streams are present - no need to check them! ASIDE of in_model_labels, which is not required!
 
 	// Read inputs.
 	pcl::PointCloud<PointXYZSIFT>::Ptr scene_cloud_xyzsift = in_cloud_xyzsift.read();
-	std::vector<pcl::PointCloud<PointXYZSIFT>::Ptr> models_clouds_xyzsift = in_model_clouds_xyzsift.read();
+	std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> model_clouds_xyzrgb = in_model_clouds_xyzrgb.read();
+	std::vector<pcl::PointCloud<PointXYZSIFT>::Ptr> model_clouds_xyzsift = in_model_clouds_xyzsift.read();
+	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> model_corners_xyz = in_model_corners_xyz.read();
 	std::vector<pcl::CorrespondencesPtr> models_scene_correspondences = in_models_scene_correspondences.read();
+
+	// Temporary variables containing names.
+	std::vector<std::string> labels;
+
+	// Read model labels.
+	if (!in_model_labels.empty())
+		labels = in_model_labels.read();
+
+	std::string basis = "model";
+	int i=0;
+
+	// Fill vector of temporary names - if required.
+	while(labels.size() < model_clouds_xyzsift.size()) {
+		std::ostringstream s;
+		s << i++;
+		std::string cname = "model_" + s.str();
+		labels.push_back(cname);
+	}//: while
+
+	// Temporary variables - for storing returned data.
+	std::vector<std::string> all_clusters_labels;
+	std::vector<Types::HomogMatrix> all_cluster_poses;
+	std::vector<pcl::CorrespondencesPtr> all_cluster_correspondences;
+
+	std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> all_cluster_clouds_xyzrgb;
+	std::vector< pcl::PointCloud<PointXYZSIFT>::Ptr> all_cluster_clouds_xyzsift;
+	std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr> all_cluster_corners_xyz;
 
 
 	// Iterate through model clouds.
-	for(int i=0; i< models_clouds_xyzsift.size(); i++) {
-		CLOG(LDEBUG) << "models_clouds_xyzsift.size()=" << models_clouds_xyzsift.size() << " models_scene_correspondences.size()=" << models_scene_correspondences.size() << "i=" << i;
-		groupSingleModelCorrespondences(models_clouds_xyzsift[i], scene_cloud_xyzsift, models_scene_correspondences[i]);
-	}//: for
+	for(size_t imd=0; imd< model_clouds_xyzsift.size(); imd++) {
+		CLOG(LDEBUG) << "models_clouds_xyzsift.size()=" << model_clouds_xyzsift.size() << " models_scene_correspondences.size()=" << models_scene_correspondences.size() << "i=" << imd;
+
+		// Variables containing cluster data for given model.
+		std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > cluster_poses;
+		std::vector<pcl::Correspondences> cluster_correspondences;
+
+		// Group correspondences for given model.
+		groupSingleModelCorrespondences(model_clouds_xyzsift[imd], scene_cloud_xyzsift, models_scene_correspondences[imd], cluster_poses, cluster_correspondences);
+
+
+		for (size_t igr = 0; igr < cluster_poses.size(); ++igr) {
+			CLOG(LDEBUG) << "Processing " <<igr<<"-th cluster";
+
+			// Get pose and correspondences.
+			Eigen::Matrix4f pose = cluster_poses[igr];
+			Types::HomogMatrix hm (pose);
+
+			pcl::CorrespondencesPtr correspondences (new pcl::Correspondences());
+			*correspondences = cluster_correspondences[igr];
+
+			CLOG(LERROR) << "hm.isIdentity()=" << hm.isIdentity() << " correspondences->size()="<< correspondences->size() << "\n" << hm;
+			// Check them - if identity matrix and 2 correspondences - then it is invalid, hence skip it.
+			if((hm.isIdentity()) && (correspondences->size() <= 2)) {
+					CLOG(LERROR) << "Skipping!!";
+					continue;
+			}//: if
+			// Otherwise - add cluster.
+
+			// Generate group name - add postfix to model.
+			std::ostringstream s;
+			s << igr;
+			std::string cname = labels[imd] + "_cluster_" + s.str();
+
+			// Add cluster data to vectors.
+			all_clusters_labels.push_back(cname);
+			all_cluster_poses.push_back(hm);
+			all_cluster_correspondences.push_back(correspondences);
+
+			// Copy and add XYZRGB, XYZSIFT and corners clouds.
+			pcl::PointCloud<pcl::PointXYZRGB>::Ptr tmp_cloud_xyzrgb (model_clouds_xyzrgb[imd]);
+			all_cluster_clouds_xyzrgb.push_back(tmp_cloud_xyzrgb);
+
+			pcl::PointCloud<PointXYZSIFT>::Ptr tmp_cloud_xyzsift (model_clouds_xyzsift[imd]);
+			all_cluster_clouds_xyzsift.push_back(tmp_cloud_xyzsift);
+
+			pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_cloud_xyz (model_corners_xyz[imd]);
+			all_cluster_corners_xyz.push_back(tmp_cloud_xyz);
+		}//: for model clusters
+
+	}//: for all models
+
+	// Display results.
+	displayCorrespondencesGroups(all_cluster_poses, all_cluster_correspondences, all_clusters_labels);
+
+	// Write result to output ports.
+	out_cluster_labels.write(all_clusters_labels);
+	out_cluster_clouds_xyzrgb.write(all_cluster_clouds_xyzrgb);
+	out_cluster_clouds_xyzsift.write(all_cluster_clouds_xyzsift);
+	out_cluster_corners_xyz.write(all_cluster_corners_xyz);
+	out_clusters_scene_correspondences.write(all_cluster_correspondences);
+	out_cluster_poses.write(all_cluster_poses);
+
 }
 
 
-/*typedef pcl::PointXYZRGBA PointType;
-typedef pcl::Normal NormalType;
-typedef pcl::ReferenceFrame RFType;*/
 
-//std::ostream& operator << (std::ostream& os, const SIFT128& p);
-/*struct SIFT128
-{
-	float descriptor[128];
-	float rf[9];
-	static int descriptorSize () { return 128; }
 
-	friend std::ostream& operator << (std::ostream& os, const SIFT128& p);
-};
-
-typedef pcl::SHOT352 DescriptorType;
-
-pcl::PointCloud<DescriptorType>::Ptr model_descriptors (new pcl::PointCloud<DescriptorType> ());
-pcl::PointCloud<DescriptorType>::Ptr scene_descriptors (new pcl::PointCloud<DescriptorType> ());*/
-
-void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<PointXYZSIFT>::Ptr model_clouds_xyzsift_, pcl::PointCloud<PointXYZSIFT>::Ptr cloud_xyzsift_, pcl::CorrespondencesPtr model_scene_correspondences_) {
+void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<PointXYZSIFT>::Ptr model_clouds_xyzsift_, pcl::PointCloud<PointXYZSIFT>::Ptr cloud_xyzsift_, pcl::CorrespondencesPtr model_scene_correspondences_, std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > & cluster_poses_, std::vector<pcl::Correspondences> & cluster_correspondences_) {
 	CLOG(LTRACE) << "groupSingleModelCorrespondences";
 
 	CLOG(LDEBUG) << "Model cloud size=" << model_clouds_xyzsift_->size() << " Scene cloud size=" << cloud_xyzsift_->size() << " Model2Scene correspondences size=" << model_scene_correspondences_->size();
@@ -137,12 +214,12 @@ void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<Poi
 			// Get i-th corresponcende.
 			pcl::Correspondence corr = model_scene_correspondences_->at(i);
 			int index = corr.index_match;
-			CLOG(LDEBUG) << "i=" << i << " corr.index_query=" << corr.index_query << " corr.index_match=" << corr.index_match << " corr.index_match=" << corr.distance;
+			// CLOG(LDEBUG) << "i=" << i << " corr.index_query=" << corr.index_query << " corr.index_match=" << corr.index_match << " corr.index_match=" << corr.distance;
 			// Copy point to resized cloud.
 			resized_cloud_xyzsift->push_back( cloud_xyzsift_-> at(index) );
 			// Change scene indices MODEL 2 SCENE fix.
 			pcl::Correspondence corr2 (corr.index_query, static_cast<int> (i), corr.distance);
-			CLOG(LDEBUG) << "i=" << i << " corr2.index_query=" << corr2.index_query << " corr2.index_match=" << corr2.index_match << " corr2.index_match=" << corr.distance;
+			// CLOG(LDEBUG) << "i=" << i << " corr2.index_query=" << corr2.index_query << " corr2.index_match=" << corr2.index_match << " corr2.index_match=" << corr.distance;
 			// Add correspondence to resized correspondences set.
 			resized_correspondences->push_back (corr2);
 		}//: for
@@ -155,16 +232,12 @@ void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<Poi
 
 
 
-	double inlier_threshold = 0.001f;
-	double cg_size = 0.01f;
-	double cg_thresh = 5.0f;
+/*
+//  Clustering by Hough 3D voting.
+	/// Property: search radius for the potential Rf calculation.
+	float prop_h3d_rf_rad (0.015f);
 
-	//Algorithm params
-	float rf_rad_ (0.015f);
-
-
-//  Clustering
-/*    if(use_hough3d){//nie działa :(
+	if(use_hough3d){//nie działa :(
 	CLOG(LINFO) << "Using Hough3DGrouping";
 	pcl::Hough3DGrouping<PointXYZSIFT, PointXYZSIFT, pcl::ReferenceFrame, pcl::ReferenceFrame> clusterer;
 	clusterer.setHoughBinSize (cg_size);
@@ -172,7 +245,7 @@ void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<Poi
 	clusterer.setUseInterpolation (true);
 	clusterer.setUseDistanceWeight (false);
 
-	clusterer.setLocalRfSearchRadius(rf_rad_);
+	clusterer.setLocalRfSearchRadius(prop_h3d_rf_rad);
 	clusterer.setInputCloud (models[i]->cloud_xyzsift);
 	//clusterer.setInputRf (model_rf);
 	clusterer.setSceneCloud (cloud_xyzsift);
@@ -181,24 +254,6 @@ void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<Poi
 
 //        clusterer.cluster (clustered_corrs);//tu sie wywala
 	clusterer.recognize (poses, clustered_corrs);//tu sie wywala
-
-	CLOG(LINFO) << "Model instances found: " << poses.size ();
-	for (size_t j = 0; j < poses.size (); ++j)
-	{
-		Eigen::Matrix3f rotation = poses[j].block<3,3>(0, 0);
-		Eigen::Vector3f translation = poses[j].block<3,1>(0, 3);
-		if(rotation != Eigen::Matrix3f::Identity()){
-			CLOG(LINFO) << "\n    Instance " << j + 1 << ":";
-			CLOG(LINFO) << "        Correspondences belonging to this instance: " << clustered_corrs[j].size () ;
-			// Print the rotation matrix and translation vector
-			CLOG(LINFO) << "            | "<< rotation (0,0)<<" "<< rotation (0,1)<< " "<<rotation (0,2)<<" | ";
-			CLOG(LINFO) << "        R = | "<< rotation (1,0)<<" "<< rotation (1,1)<< " "<<rotation (1,2)<<" | ";
-			CLOG(LINFO) << "            | "<< rotation (2,0)<<" "<< rotation (2,1)<< " "<<rotation (2,2)<<" | ";
-			CLOG(LINFO) << "        t = < "<< translation (0)<<" "<< translation (1)<< " "<< translation (2)<<" > ";
-		}
-	}
-}
-else {
 */
 
 	CLOG(LDEBUG) << "Using GeometricConsistencyGrouping";
@@ -206,8 +261,8 @@ else {
 	pcl::GeometricConsistencyGrouping<PointXYZSIFT, PointXYZSIFT> gc_clusterer;
 
 	// Set algorithm parameters.
-	gc_clusterer.setGCSize (cg_size);
-	gc_clusterer.setGCThreshold (cg_thresh);
+	gc_clusterer.setGCSize (prop_cg_size);
+	gc_clusterer.setGCThreshold (prop_cg_thresh);
 
 	// Set model and scene clouds.
 	gc_clusterer.setInputCloud (model_clouds_xyzsift_);
@@ -216,35 +271,17 @@ else {
 	// Cluster MODEL 2 SCENE correspondences.
 	gc_clusterer.setModelSceneCorrespondences (resized_correspondences);
 
+	// Perform correspondences grouping.
+	gc_clusterer.recognize (cluster_poses_, cluster_correspondences_);
+	CLOG(LINFO) << "Groups found: " << cluster_poses_.size () ;
 
-	std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > cluster_poses;
-	std::vector<pcl::Correspondences> cluster_correspondences;
+}
 
-	//gc_clusterer.cluster (clustered_corrs);
-	gc_clusterer.recognize (cluster_poses, cluster_correspondences);
-	CLOG(LINFO) << "Model instances found: " << cluster_poses.size () ;
-//            cout<<"clustered_corrs "<< clustered_corrs.size();
-//            for(int j=0; j<clustered_corrs.size(); j++){
-//                for(int k =0; k<clustered_corrs[j].size();k++){
-//                    cout<<clustered_corrs[j][k].index_query<<"-"<<clustered_corrs[j][k].index_match<<", ";
-//                }
-//                cout<<"-----------"<<endl;
-//            }
-		for (size_t k = 0; k < cluster_poses.size (); ++k){
-			  Eigen::Matrix3f rotation = cluster_poses[k].block<3,3>(0, 0);
-			  Eigen::Vector3f translation = cluster_poses[k].block<3,1>(0, 3);
-			  if(rotation != Eigen::Matrix3f::Identity()){
-				  CLOG(LINFO) << "\n    Instance " << k + 1 << ":";
-				  CLOG(LINFO) << "        Correspondences belonging to this instance: " << cluster_correspondences[k].size () ;
-				  //Print the rotation matrix and translation vector
-				  CLOG(LINFO) << "            | "<< rotation (0,0)<<" "<< rotation (0,1)<< " "<<rotation (0,2)<<" | ";
-				  CLOG(LINFO) << "        R = | "<< rotation (1,0)<<" "<< rotation (1,1)<< " "<<rotation (1,2)<<" | ";
-				  CLOG(LINFO) << "            | "<< rotation (2,0)<<" "<< rotation (2,1)<< " "<<rotation (2,2)<<" | ";
-				  CLOG(LINFO) << "        t = < "<< translation (0)<<" "<< translation (1)<< " "<< translation (2)<<" > ";
-			  }//: if
-		}//: for
 
-	//	}//: else
+void CorrespondenceGrouping::displayCorrespondencesGroups (std::vector<Types::HomogMatrix> cluster_poses_, std::vector<pcl::CorrespondencesPtr> cluster_correspondences_, std::vector<std::string> cluster_labels_) {
+	for (size_t k = 0; k < cluster_poses_.size (); ++k){
+			  CLOG(LINFO) << "Group (" << k << "): " << cluster_labels_[k] << " (with " << cluster_correspondences_[k]->size () << " correspondences) \n" << cluster_poses_[k];
+	}//: for
 }
 
 

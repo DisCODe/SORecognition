@@ -144,24 +144,24 @@
                 <!--Models-->
 
                 <Source name="SOMJSONReader.out_model_clouds_xyzrgb">
-                        <sink>Viewer.in_om_clouds_xyzrgb</sink>
+                        <sink>Viewer.in_object_clouds_xyzrgb</sink>
                 </Source>
 
                 <Source name="SOMJSONReader.out_model_clouds_xyzsift">
-                        <sink>Viewer.in_om_clouds_xyzsift</sink>
+                        <sink>Viewer.in_object_clouds_xyzsift</sink>
                         <sink>CorrespondenceEstimation.in_model_clouds_xyzsift</sink><!---->
                 </Source>
 
                 <Source name="SOMJSONReader.out_model_corners_xyz">
-                        <sink>Viewer.in_om_corners_xyz</sink>
+                        <sink>Viewer.in_object_corners_xyz</sink>
                 </Source>
 
-                <Source name="SOMJSONReader.out_model_ids">
-                        <sink>Viewer.in_om_labels</sink>
+                <Source name="SOMJSONReader.out_model_labels">
+                        <sink>Viewer.in_object_labels</sink>
                 </Source>
 
                 <Source name="CorrespondenceEstimation.out_models_scene_correspondences">
-                        <sink>Viewer.in_models_scene_correspondences</sink>
+                        <sink>Viewer.in_objects_scene_correspondences</sink>
                 </Source> <!---->
 
 
