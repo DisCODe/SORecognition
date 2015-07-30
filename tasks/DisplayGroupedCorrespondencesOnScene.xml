@@ -34,18 +34,20 @@
                             </Component>
 
                             <Component name="NextImageTrigger" type="CvBasic:Trigger" priority="2" bump="0">
-                                <param name="auto_trigger">1</param>
+                                <param name="auto_trigger">0</param>
                             </Component>
 
                             <Component name="RGBSequence" type="CvBasic:Sequence" priority="3" bump="-1">
-                                <param name="sequence.directory">/home/mlaszkow/DCL/ecovi/data/herbapol_mieta/</param>
+<!--                                <param name="sequence.directory">/home/mlaszkow/DCL/ecovi/data/herbapol_mieta/</param>-->
+                                <param name="sequence.directory">/home/tkornuta/discode_ecovi/DCL/</param>
                                 <param name="sequence.pattern">.*_rgb.png</param>
                                 <param name="mode.loop">1</param>
                                 <param name="mode.auto_next_image">0</param>
                             </Component>
 
                             <Component name="DepthSequence" type="CvBasic:Sequence" priority="4" bump="-1">
-                                <param name="sequence.directory">/home/mlaszkow/DCL/ecovi/data/herbapol_mieta/</param>
+<!--                                <param name="sequence.directory">/home/mlaszkow/DCL/ecovi/data/herbapol_mieta/</param>-->
+                                <param name="sequence.directory">/home/tkornuta/discode_ecovi/DCL/</param>
                                 <param name="sequence.pattern">.*_depth.png</param>
                                 <param name="mode.loop">1</param>
                                 <param name="mode.auto_next_image">0</param>
@@ -75,8 +77,12 @@
                                 <param name="rejection.max_distance">0.01</param>
                             </Component>
 
-                            <Component name="CorrespondenceGrouping" type="SORecognition:CorrespondenceGrouping" priority="31" bump="2">
+                            <Component name="CorrespondenceGrouping" type="SORecognition:CorrespondenceGrouping" priority="31" bump="0">
                             </Component>
+
+                            <Component name="CloudTransformer" type="PCL:CloudTransformer" priority="32" bump="0">
+                            </Component>
+
                         </Executor>
 		</Subtask>
 
@@ -170,18 +176,38 @@
                 </Source> <!---->
 
 
-                <!--Clusters viewer-->
+                <!--Cloud transformer-->
 
 
                 <Source name="CorrespondenceGrouping.out_cluster_clouds_xyzrgb">
-                        <sink>Viewer.in_object_clouds_xyzrgb</sink>
+                        <sink>CloudTransformer.in_clouds_xyzrgb</sink>
                 </Source>
 
                 <Source name="CorrespondenceGrouping.out_cluster_clouds_xyzsift">
-                        <sink>Viewer.in_object_clouds_xyzsift</sink>
+                        <sink>CloudTransformer.in_clouds_xyzsift</sink>
                 </Source>
 
                 <Source name="CorrespondenceGrouping.out_cluster_corners_xyz">
+                        <sink>CloudTransformer.in_clouds_xyz</sink>
+                </Source>
+
+                <Source name="CorrespondenceGrouping.out_cluster_poses">
+                        <sink>CloudTransformer.in_hms</sink>
+                </Source>
+
+
+                <!--Clusters viewer-->
+
+
+                <Source name="CloudTransformer.out_clouds_xyzrgb">
+                        <sink>Viewer.in_object_clouds_xyzrgb</sink>
+                </Source>
+
+                <Source name="CloudTransformer.out_clouds_xyzsift">
+                        <sink>Viewer.in_object_clouds_xyzsift</sink>
+                </Source>
+
+                <Source name="CloudTransformer.out_clouds_xyz">
                         <sink>Viewer.in_object_corners_xyz</sink>
                 </Source>
 

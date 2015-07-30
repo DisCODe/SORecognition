@@ -129,13 +129,15 @@ void CorrespondenceGrouping::groupCorrespondences() {
 	std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr> all_cluster_corners_xyz;
 
 
-	// Iterate through model clouds.
+	// Iterate through model clouds.redbull_rgbdrainbow_kinect/
 	for(size_t imd=0; imd< model_clouds_xyzsift.size(); imd++) {
 		CLOG(LDEBUG) << "models_clouds_xyzsift.size()=" << model_clouds_xyzsift.size() << " models_scene_correspondences.size()=" << models_scene_correspondences.size() << "i=" << imd;
 
 		// Variables containing cluster data for given model.
 		std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > cluster_poses;
-		std::vector<pcl::Correspondences> cluster_correspondences;
+		//std::vector<pcl::Correspondences> cluster_correspondences;
+		std::vector<pcl::CorrespondencesPtr> cluster_correspondences;
+
 
 		// Group correspondences for given model.
 		groupSingleModelCorrespondences(model_clouds_xyzsift[imd], scene_cloud_xyzsift, models_scene_correspondences[imd], cluster_poses, cluster_correspondences);
@@ -148,13 +150,10 @@ void CorrespondenceGrouping::groupCorrespondences() {
 			Eigen::Matrix4f pose = cluster_poses[igr];
 			Types::HomogMatrix hm (pose);
 
-			pcl::CorrespondencesPtr correspondences (new pcl::Correspondences());
-			*correspondences = cluster_correspondences[igr];
-
-			CLOG(LERROR) << "hm.isIdentity()=" << hm.isIdentity() << " correspondences->size()="<< correspondences->size() << "\n" << hm;
+			//CLOG(LERROR) << "hm.isIdentity()=" << hm.isIdentity() << " correspondences->size()="<< correspondences->size() << "\n" << hm;
 			// Check them - if identity matrix and 2 correspondences - then it is invalid, hence skip it.
-			if((hm.isIdentity()) && (correspondences->size() <= 2)) {
-					CLOG(LERROR) << "Skipping!!";
+			if((hm.isIdentity()) && ((cluster_correspondences[igr])->size() <= 2)) {
+					//CLOG(LERROR) << "Skipping!!";
 					continue;
 			}//: if
 			// Otherwise - add cluster.
@@ -167,7 +166,7 @@ void CorrespondenceGrouping::groupCorrespondences() {
 			// Add cluster data to vectors.
 			all_clusters_labels.push_back(cname);
 			all_cluster_poses.push_back(hm);
-			all_cluster_correspondences.push_back(correspondences);
+			all_cluster_correspondences.push_back(cluster_correspondences[igr]);
 
 			// Copy and add XYZRGB, XYZSIFT and corners clouds.
 			pcl::PointCloud<pcl::PointXYZRGB>::Ptr tmp_cloud_xyzrgb (model_clouds_xyzrgb[imd]);
@@ -198,10 +197,13 @@ void CorrespondenceGrouping::groupCorrespondences() {
 
 
 
-void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<PointXYZSIFT>::Ptr model_clouds_xyzsift_, pcl::PointCloud<PointXYZSIFT>::Ptr cloud_xyzsift_, pcl::CorrespondencesPtr model_scene_correspondences_, std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > & cluster_poses_, std::vector<pcl::Correspondences> & cluster_correspondences_) {
+void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<PointXYZSIFT>::Ptr model_clouds_xyzsift_, pcl::PointCloud<PointXYZSIFT>::Ptr cloud_xyzsift_, pcl::CorrespondencesPtr model_scene_correspondences_, std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > & cluster_poses_, std::vector<pcl::CorrespondencesPtr> & cluster_correspondences_) {
 	CLOG(LTRACE) << "groupSingleModelCorrespondences";
 
 	CLOG(LDEBUG) << "Model cloud size=" << model_clouds_xyzsift_->size() << " Scene cloud size=" << cloud_xyzsift_->size() << " Model2Scene correspondences size=" << model_scene_correspondences_->size();
+
+	// Vector used for final enumeration index_mateches of grouped correspondences/
+	std::vector<int> index_match_enumeration;
 
 	// Resize the scene cloud so it contains only points having correspondences.
 	pcl::PointCloud<PointXYZSIFT>::Ptr resized_cloud_xyzsift (new pcl::PointCloud<PointXYZSIFT>());
@@ -214,6 +216,8 @@ void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<Poi
 			// Get i-th corresponcende.
 			pcl::Correspondence corr = model_scene_correspondences_->at(i);
 			int index = corr.index_match;
+			// Remember index_match;
+			index_match_enumeration.push_back(index);
 			// CLOG(LDEBUG) << "i=" << i << " corr.index_query=" << corr.index_query << " corr.index_match=" << corr.index_match << " corr.index_match=" << corr.distance;
 			// Copy point to resized cloud.
 			resized_cloud_xyzsift->push_back( cloud_xyzsift_-> at(index) );
@@ -271,8 +275,43 @@ void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<Poi
 	// Cluster MODEL 2 SCENE correspondences.
 	gc_clusterer.setModelSceneCorrespondences (resized_correspondences);
 
+	std::vector<pcl::Correspondences> tmp_clusters_correspondences;
+
 	// Perform correspondences grouping.
-	gc_clusterer.recognize (cluster_poses_, cluster_correspondences_);
+	gc_clusterer.recognize (cluster_poses_, tmp_clusters_correspondences);
+
+	// Reenumerate index_matches - if clouds were resized.
+
+	if (cloud_xyzsift_->size() > model_scene_correspondences_->size()) {
+		// For each cluster.
+		for (size_t clui = 0; clui < tmp_clusters_correspondences.size(); ++clui){
+			// For each cluster correspondence.
+			// Create new correspondences pointer.
+			pcl::CorrespondencesPtr tmp_correspondences (new pcl::Correspondences());
+			for (size_t cori = 0; cori < tmp_clusters_correspondences[clui].size(); ++cori){
+				// Get (cor)i-th corresponcende from (clu)i-th cluster.
+				pcl::Correspondence corr = (tmp_clusters_correspondences[clui]).at(cori);
+				// CLOG(LDEBUG) << "i=" << i << " corr.index_query=" << corr.index_query << " corr.index_match=" << corr.index_match << " corr.index_match=" << corr.distance;
+
+				// Change scene indices - back to original indices.
+				pcl::Correspondence corr2 (corr.index_query, index_match_enumeration[corr.index_match], corr.distance);
+				// CLOG(LDEBUG) << "i=" << i << " corr2.index_query=" << corr2.index_query << " corr2.index_match=" << corr2.index_match << " corr2.index_match=" << corr.distance;
+				// Add correspondence to resized correspondences set.
+				tmp_correspondences->push_back (corr2);
+			}//: for
+			// Add cluster of correspondences to vector.
+			cluster_correspondences_.push_back(tmp_correspondences);
+		}//: for
+	} else {
+		// If not, simply "point" the found vector of clusters of correspondences.
+		for (size_t i = 0; i < tmp_clusters_correspondences.size(); ++i){
+			pcl::Correspondences tmp_cluster = tmp_clusters_correspondences[i];
+			pcl::CorrespondencesPtr tmp_cluster_ptr (new pcl::Correspondences ());
+			*tmp_cluster_ptr = tmp_cluster;
+			cluster_correspondences_.push_back(tmp_cluster_ptr);
+		}//: for
+	}//: else
+
 	CLOG(LINFO) << "Groups found: " << cluster_poses_.size () ;
 
 }
