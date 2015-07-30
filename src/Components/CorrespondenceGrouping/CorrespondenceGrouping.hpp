@@ -70,10 +70,10 @@ protected:
 	 */
 	bool onStop();
 
-	/// Data stream with cloud of XYZRGB points.
+	/// Data stream with scene cloud of XYZRGB points.
 	Base::DataStreamIn<pcl::PointCloud<pcl::PointXYZRGB>::Ptr, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_cloud_xyzrgb;
 
-	/// Data stream with cloud of XYZ SIFTs.
+	/// Data stream with scene cloud of XYZ SIFTs.
 	Base::DataStreamIn<pcl::PointCloud<PointXYZSIFT>::Ptr, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_cloud_xyzsift;
 
 	/// Input data stream containing vector of object/model labels.
@@ -112,10 +112,12 @@ protected:
 
 
 	/// Property: the consensus set resolution, in metric units.
-	Base::Property<double> prop_cg_size;
+	Base::Property<double> prop_cg_consensus_resolution;
 	/// Property: the minimum cluster size.
-	Base::Property<double> prop_cg_thresh;
+	Base::Property<double> prop_cg_minimal_cluster_size;
 
+	/// Property: print results (cluster statistics) in console.
+	Base::Property<bool> prop_print_cluster_statistics;
 
 	/// Main handler - groups correspondences.
 	void groupCorrespondences();
@@ -123,8 +125,8 @@ protected:
 	/// Group correspondences between a single model and scene.
 	void groupSingleModelCorrespondences(pcl::PointCloud<PointXYZSIFT>::Ptr model_clouds_xyzsift_, pcl::PointCloud<PointXYZSIFT>::Ptr cloud_xyzsift_, pcl::CorrespondencesPtr model_scene_correspondences_, std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > & cluster_poses_, std::vector<pcl::CorrespondencesPtr> & cluster_correspondences_);
 
-	/// Displays vector of clusters.
-	void displayCorrespondencesGroups (std::vector<Types::HomogMatrix> cluster_poses_, std::vector<pcl::CorrespondencesPtr> cluster_correspondences_, std::vector<std::string> cluster_labels_);
+	/// Prints results of clustering (number of clusters, their sizes, transformations etc.).
+	void printCorrespondencesGroups (std::vector<Types::HomogMatrix> cluster_poses_, std::vector<pcl::CorrespondencesPtr> cluster_correspondences_, std::vector<std::string> cluster_labels_);
 
 };
 

@@ -20,11 +20,13 @@ namespace CorrespondenceGrouping {
 
 CorrespondenceGrouping::CorrespondenceGrouping(const std::string & name) :
 	Base::Component(name),
-	prop_cg_size("cluster_grouping.size", 0.01),
-	prop_cg_thresh("cluster_grouping.threshold", 5.0)
+	prop_cg_consensus_resolution("cluster_grouping.consensus_resolution", 0.01),
+	prop_cg_minimal_cluster_size("cluster_grouping.minimal_cluster_size", 5.0),
+	prop_print_cluster_statistics("print_cluster_statistics",true)
 {
-	registerProperty(prop_cg_size);
-	registerProperty(prop_cg_thresh);
+	registerProperty(prop_cg_consensus_resolution);
+	registerProperty(prop_cg_minimal_cluster_size);
+	registerProperty(prop_print_cluster_statistics);
 }
 
 CorrespondenceGrouping::~CorrespondenceGrouping() {
@@ -108,9 +110,7 @@ void CorrespondenceGrouping::groupCorrespondences() {
 	if (!in_model_labels.empty())
 		labels = in_model_labels.read();
 
-	std::string basis = "model";
 	int i=0;
-
 	// Fill vector of temporary names - if required.
 	while(labels.size() < model_clouds_xyzsift.size()) {
 		std::ostringstream s;
@@ -182,7 +182,7 @@ void CorrespondenceGrouping::groupCorrespondences() {
 	}//: for all models
 
 	// Display results.
-	displayCorrespondencesGroups(all_cluster_poses, all_cluster_correspondences, all_clusters_labels);
+	printCorrespondencesGroups(all_cluster_poses, all_cluster_correspondences, all_clusters_labels);
 
 	// Write result to output ports.
 	out_cluster_labels.write(all_clusters_labels);
@@ -265,8 +265,8 @@ void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<Poi
 	pcl::GeometricConsistencyGrouping<PointXYZSIFT, PointXYZSIFT> gc_clusterer;
 
 	// Set algorithm parameters.
-	gc_clusterer.setGCSize (prop_cg_size);
-	gc_clusterer.setGCThreshold (prop_cg_thresh);
+	gc_clusterer.setGCSize (prop_cg_consensus_resolution);
+	gc_clusterer.setGCThreshold (prop_cg_minimal_cluster_size);
 
 	// Set model and scene clouds.
 	gc_clusterer.setInputCloud (model_clouds_xyzsift_);
@@ -312,15 +312,17 @@ void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<Poi
 		}//: for
 	}//: else
 
-	CLOG(LINFO) << "Groups found: " << cluster_poses_.size () ;
+	CLOG(LDEBUG) << "Groups found: " << cluster_poses_.size () ;
 
 }
 
 
-void CorrespondenceGrouping::displayCorrespondencesGroups (std::vector<Types::HomogMatrix> cluster_poses_, std::vector<pcl::CorrespondencesPtr> cluster_correspondences_, std::vector<std::string> cluster_labels_) {
-	for (size_t k = 0; k < cluster_poses_.size (); ++k){
-			  CLOG(LINFO) << "Group (" << k << "): " << cluster_labels_[k] << " (with " << cluster_correspondences_[k]->size () << " correspondences) \n" << cluster_poses_[k];
-	}//: for
+void CorrespondenceGrouping::printCorrespondencesGroups (std::vector<Types::HomogMatrix> cluster_poses_, std::vector<pcl::CorrespondencesPtr> cluster_correspondences_, std::vector<std::string> cluster_labels_) {
+	if (prop_print_cluster_statistics) {
+		for (size_t k = 0; k < cluster_poses_.size (); ++k){
+				  CLOG(LINFO) << "Group (" << k << "): " << cluster_labels_[k] << " (with " << cluster_correspondences_[k]->size () << " correspondences) \n" << cluster_poses_[k];
+		}//: for
+	}//: if
 }
 
 
