@@ -2,3 +2,5 @@
 ADD_COMPONENT(CorrespondenceGrouping)
 
 ADD_COMPONENT(HypothesisVerification)
+
+ADD_COMPONENT(ROSProxy)
