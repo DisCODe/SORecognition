@@ -96,7 +96,7 @@
 		<Subtask name="Visualisation">
                         <Executor name="Exec2" period="0.2">
                                 <Component name="Viewer" type="PCL:CloudViewer" priority="100" bump="0">
-                                    <param name="coordinate_system">false</param>
+                                    <param name="scene.display_coordinate_system">false</param>
 				</Component>
 			</Executor>
 		</Subtask>
@@ -247,6 +247,9 @@
                         <sink>Viewer.in_objects_scene_correspondences</sink>
                 </Source>
 
+                <Source name="HypothesisVerification.out_object_poses">
+                        <sink>Viewer.in_object_poses</sink>
+                </Source>
 
        </DataStreams>
 </Task>

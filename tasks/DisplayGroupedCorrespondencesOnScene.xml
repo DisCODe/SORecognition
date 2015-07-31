@@ -193,6 +193,7 @@
 
                 <Source name="CorrespondenceGrouping.out_cluster_poses">
                         <sink>CloudTransformer.in_hms</sink>
+                        <sink>Viewer.in_object_poses</sink>
                 </Source>
 
 
