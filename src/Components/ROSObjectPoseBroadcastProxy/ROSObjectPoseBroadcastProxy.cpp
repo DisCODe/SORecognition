@@ -89,6 +89,7 @@ void ROSObjectPoseBroadcastProxy::publishPoses() {
 
 	// Broadcaster.
 	static tf::TransformBroadcaster br;
+	std::vector< tf::StampedTransform > transforms;
 
 	// Publish poses 1 by 1.
 	for (size_t i = 0; i < object_poses.size(); ++i) {
@@ -102,9 +103,12 @@ void ROSObjectPoseBroadcastProxy::publishPoses() {
 		// Generate TF name.
 		std::string name = "/"+object_labels[i];
 		//name += ('0'+i);
-		br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), prop_parent_frame, name));
-
-	}
+		transforms.push_back(tf::StampedTransform(transform, ros::Time::now(), prop_parent_frame, name));
+		CLOG(LERROR) <<"Adding "<<name << " pose with parent " << prop_parent_frame << " to list";
+	}//: for
+	CLOG(LERROR) <<"Broadcasting "<<transforms.size() << " pose(s) at once";
+	// Publish all stamped transforms at once.
+	br.sendTransform(transforms);
 }
 
 

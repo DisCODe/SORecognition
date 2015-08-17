@@ -12,7 +12,8 @@
 
 #include <boost/bind.hpp>
 
- #include <tf_conversions/tf_eigen.h>
+#include <tf_conversions/tf_eigen.h>
+#include <object_recognition_msgs/RecognizedObject.h>
 
 
 namespace Processors {
@@ -48,7 +49,14 @@ bool ROSProxy::onInit() {
 	// Initialize ROS node.
 	static int argc;
 	static char * argv = NULL;
+	// Initialize ROS node.
 	ros::init(argc, &argv, std::string("discode"), ros::init_options::NoSigintHandler);
+
+	// Create ROS node handle.
+	nh = new ros::NodeHandle;
+
+	// Create publisher.
+	pub = nh->advertise<object_recognition_msgs::RecognizedObject>("RecognizedObject", 100);
 
 	return true;
 }
@@ -88,11 +96,11 @@ void ROSProxy::publishPoses() {
 	}//: while
 
 	// Broadcaster.
-	static tf::TransformBroadcaster br;
+	//static tf::TransformBroadcaster br;
 
 	// Publish poses 1 by 1.
 	for (size_t i = 0; i < object_poses.size(); ++i) {
-		CLOG(LDEBUG) << "Broadcasting transform: " << object_poses[i];
+		CLOG(LDEBUG) << "Sending transform: " << object_poses[i];
 
 		// Transform pose to quaternion.
 		Eigen::Affine3d pose = object_poses[i];
@@ -102,7 +110,23 @@ void ROSProxy::publishPoses() {
 		// Generate TF name.
 		std::string name = "/"+object_labels[i];
 		//name += ('0'+i);
-		br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), prop_parent_frame, name));
+//		br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), prop_parent_frame, name));
+
+//		ros::Publisher pub = nh.advertise<std_msgs::String>("topic_name", 5);
+		//std_msgs::StringPtr str(new std_msgs::String);
+		//str->data = "hello world";
+
+
+		object_recognition_msgs::RecognizedObject r;
+
+		std_msgs::Header hdr;
+		r.header = hdr;
+		r.confidence = 0;
+		geometry_msgs::PoseWithCovarianceStamped pwcs;
+		r.pose = pwcs;
+
+		pub.publish(r);
+
 
 	}
 }

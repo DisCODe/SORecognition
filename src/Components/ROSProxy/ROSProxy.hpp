@@ -86,6 +86,11 @@ protected:
 	/// Handler - publishes received poses to ROS TF topics.
 	void publishPoses();
 
+	/// Handle to ROS.
+	ros::NodeHandle * nh;
+
+	/// ROS publisher.
+	ros::Publisher pub;
 };
 
 } //: namespace ROSProxy
