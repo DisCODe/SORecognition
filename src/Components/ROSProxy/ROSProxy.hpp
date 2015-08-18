@@ -75,10 +75,15 @@ protected:
 	/// Input data stream containing vector of poses of objects/clusters/models.
 	Base::DataStreamIn<std::vector<Types::HomogMatrix>, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex>  in_object_poses;
 
+	/// Input data stream containing vector of covariances of poses of objects/clusters/models .
+	Base::DataStreamIn<std::vector<boost::array<double, 36ul> >, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex>  in_object_pose_covariances;
 
 	/// Property: title of the window.
 	Base::Property<std::string> prop_parent_frame;
 
+
+	/// Property: title of the window.
+	Base::Property<bool> prop_ros_spin;
 
 	/// Handler - performs ROS spin.
 	void spin();

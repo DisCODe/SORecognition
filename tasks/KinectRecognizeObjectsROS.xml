@@ -70,7 +70,7 @@
                             <Component name="HypothesisVerification" type="SORecognition:HypothesisVerification" priority="32" bump="0">
                             </Component>
 
-                            <Component name="ROSObjectPoseBroadcastProxy" type="SORecognition:ROSObjectPoseBroadcastProxy" priority="33" bump="0">
+                            <Component name="ROSProxy" type="SORecognition:ROSProxy" priority="33" bump="0">
                             <param name="parent_frame">/t_kinect_optical_frame</param>
 
                             </Component>
@@ -219,7 +219,7 @@
 
                 <Source name="HypothesisVerification.out_object_labels">
                         <sink>Viewer.in_object_labels</sink>
-                        <sink>ROSObjectPoseBroadcastProxy.in_object_labels</sink>
+                        <sink>ROSProxy.in_object_labels</sink>
                 </Source>
 
                 <Source name="HypothesisVerification.out_objects_scene_correspondences">
@@ -228,7 +228,7 @@
 
                 <Source name="HypothesisVerification.out_object_poses">
                         <sink>Viewer.in_object_poses</sink>
-                        <sink>ROSObjectPoseBroadcastProxy.in_object_poses</sink>
+                        <sink>ROSProxy.in_object_poses</sink>
                 </Source>
 
        </DataStreams>

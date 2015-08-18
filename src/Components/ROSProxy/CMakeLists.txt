@@ -27,7 +27,7 @@ function (USE_ROS)
     set(ROS_LIBRARIES ${ROS_LIBRARIES} ${INT_ROS_LIBRARIES} PARENT_SCOPE)
 endfunction ()
 
-USE_ROS(roscpp std_msgs tf geometry_msgs tf_conversions object_recognition_msgs)
+USE_ROS(roscpp std_msgs tf geometry_msgs tf_conversions object_recognition_msgs eigen_conversions)
 
 # Create a variable containing all .cpp files:
 FILE(GLOB files *.cpp)
