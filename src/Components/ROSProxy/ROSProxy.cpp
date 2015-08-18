@@ -59,7 +59,7 @@ bool ROSProxy::onInit() {
 	// Create ROS node handle.
 	nh = new ros::NodeHandle;
 
-	// Create publisher.
+	// Create publisherobj.
 	pub = nh->advertise<object_recognition_msgs::RecognizedObject>("RecognizedObjects", 1000);
 
 	return true;
@@ -119,7 +119,7 @@ void ROSProxy::publishPoses() {
 
 
 
-	// Broadcaster.
+	// Broadcasterobj.
 	//static tf::TransformBroadcaster br;
 
 	// Publish poses 1 by 1.
@@ -138,7 +138,7 @@ void ROSProxy::publishPoses() {
 		// Generate TF name.
 		std::string name = "/"+object_labels[i];
 		//name += ('0'+i);
-//		br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), prop_parent_frame, name));
+//		brobj.sendTransform(tf::StampedTransform(transform, ros::Time::now(), prop_parent_frame, name));
 
 //		ros::Publisher pub = nh.advertise<std_msgs::String>("topic_name", 5);
 		//std_msgs::StringPtr str(new std_msgs::String);
@@ -155,18 +155,18 @@ void ROSProxy::publishPoses() {
 		hdr.frame_id = prop_parent_frame;
 
 		// Fill Recognized object structure.
-		object_recognition_msgs::RecognizedObject r;
+		object_recognition_msgs::RecognizedObject robj;
 		// std_msgs/Header header
-		r.header = hdr;
+		robj.header = hdr;
 
 		// object_recognition_msgs/ObjectType type
 		// string key
-		r.type.key = name;
+		robj.type.key = name;
 		// string db
-		r.type.db = "";
+		robj.type.db = "";
 
 		// float32 confidence TODO!
-		r.confidence = 1;
+		robj.confidence = 1;
 
 		// sensor_msgs/PointCloud2[] point_clouds - not used.
 
@@ -176,15 +176,15 @@ void ROSProxy::publishPoses() {
 
 		// geometry_msgs/PoseWithCovarianceStamped pose
 		// std_msgs/Header header
-		r.pose.header = hdr;
+		robj.pose.header = hdr;
 		//geometry_msgs/PoseWithCovariance pose
 		// geometry_msgs/Pose pose
-		r.pose.pose.pose = msg_pose;
+		robj.pose.pose.pose = msg_pose;
 		// float64[36] covariance
-		r.pose.pose.covariance = object_pose_covariances[i];
+		robj.pose.pose.covariance = object_pose_covariances[i];
 
 		// Publish object data.
-		pub.publish(r);
+		pub.publish(robj);
 	}//: for
 }
 

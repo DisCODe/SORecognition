@@ -101,8 +101,9 @@ void ROSObjectPoseBroadcastProxy::publishPoses() {
 		tf::poseEigenToTF(pose,transform);
 
 		// Generate TF name.
-		std::string name = "/"+object_labels[i];
-		//name += ('0'+i);
+		// std::string name = "/"+object_labels[i];
+		std::string name = object_labels[i];
+
 		transforms.push_back(tf::StampedTransform(transform, ros::Time::now(), prop_parent_frame, name));
 		CLOG(LERROR) <<"Adding "<<name << " pose with parent " << prop_parent_frame << " to list";
 	}//: for
