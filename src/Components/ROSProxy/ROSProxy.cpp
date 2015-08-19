@@ -126,25 +126,13 @@ void ROSProxy::publishPoses() {
 	for (size_t i = 0; i < object_poses.size(); ++i) {
 		CLOG(LDEBUG) << "Sending transform: " << object_poses[i];
 
-		// Transform pose to quaternion.
-		Eigen::Affine3d pose = object_poses[i];
-/*		tf::Transform transform;
-		tf::poseEigenToTF(pose,transform);*/
-
 		// Transform pose to message.
+		Eigen::Affine3d pose = object_poses[i];
 		geometry_msgs::Pose msg_pose;
 		tf::poseEigenToMsg(pose, msg_pose);
 
-		// Generate TF name.
-		std::string name = "/"+object_labels[i];
-		//name += ('0'+i);
-//		brobj.sendTransform(tf::StampedTransform(transform, ros::Time::now(), prop_parent_frame, name));
-
-//		ros::Publisher pub = nh.advertise<std_msgs::String>("topic_name", 5);
-		//std_msgs::StringPtr str(new std_msgs::String);
-		//str->data = "hello world";
-
-
+		// Generate TF name - cut out the numbers!
+		std::string name = "/"+	object_labels[i].substr(0,object_labels[i].rfind("_"));
 
 		// Fill header structure - std_msgs/Header header
 		std_msgs::Header hdr;
