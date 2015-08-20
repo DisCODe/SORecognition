@@ -51,6 +51,7 @@ void HypothesisVerification::prepareInterface() {
 	registerStream("in_cluster_corners_xyz", &in_cluster_corners_xyz);
 	registerStream("in_clusters_scene_correspondences", &in_clusters_scene_correspondences);
 	registerStream("in_cluster_poses", &in_cluster_poses);
+	registerStream("in_cluster_confidences", &in_cluster_confidences);
 
 	// Register object-related output streams.
 	registerStream("out_object_labels", &out_object_labels);
@@ -59,6 +60,7 @@ void HypothesisVerification::prepareInterface() {
 	registerStream("out_object_corners_xyz", &out_object_corners_xyz);
 	registerStream("out_objects_scene_correspondences", &out_objects_scene_correspondences);
 	registerStream("out_object_poses", &out_object_poses);
+	registerStream("out_object_confidences", &out_object_confidences);
 
 	// Register main handler.
 	registerHandler("verifyHypothesesXYZRGB", boost::bind(&HypothesisVerification::verifyHypothesesXYZRGB, this));
@@ -68,6 +70,7 @@ void HypothesisVerification::prepareInterface() {
 	addDependency("verifyHypothesesXYZRGB", &in_cluster_corners_xyz);
 	addDependency("verifyHypothesesXYZRGB", &in_clusters_scene_correspondences);
 	addDependency("verifyHypothesesXYZRGB", &in_cluster_poses);
+	addDependency("verifyHypothesesXYZRGB", &in_cluster_confidences);
 //	addDependency("verifyHypothesesXYZRGB", &in_cluster_labels);
 
 }
@@ -102,6 +105,7 @@ void HypothesisVerification::verifyHypothesesXYZRGB() {
 	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> cluster_corners_xyz = in_cluster_corners_xyz.read();
 	std::vector<pcl::CorrespondencesPtr> clusters_scene_correspondences = in_clusters_scene_correspondences.read();
 	std::vector<Types::HomogMatrix> cluster_poses = in_cluster_poses.read();
+	std::vector<double> cluster_confidences  = in_cluster_confidences.read();
 
 	if(cluster_clouds_xyzrgb.size() == 0){
 		CLOG(LWARNING) << "There are no clusters to verify";
@@ -148,6 +152,7 @@ void HypothesisVerification::verifyHypothesesXYZRGB() {
 	std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr> all_object_corners_xyz;
 	std::vector<Types::HomogMatrix> all_object_poses;
 	std::vector<pcl::CorrespondencesPtr> all_objects_scene_correspondences;
+	std::vector<double> all_object_confidences;
 
 
 	// Copy verified hypotheses data to output ports.
@@ -162,6 +167,8 @@ void HypothesisVerification::verifyHypothesesXYZRGB() {
 			all_object_corners_xyz.push_back(cluster_corners_xyz[i]);
 			all_object_poses.push_back(cluster_poses[i]);
 			all_objects_scene_correspondences.push_back(clusters_scene_correspondences[i]);
+			all_object_confidences.push_back(cluster_confidences[i]);
+
 
 			// Process name.
 			std::string basis = labels[i].substr(0,labels[i].rfind("cluster_"));
@@ -183,6 +190,7 @@ void HypothesisVerification::verifyHypothesesXYZRGB() {
 	out_object_poses.write(all_object_poses);
 	out_objects_scene_correspondences.write(all_objects_scene_correspondences);
 	out_object_labels.write(all_object_labels);
+	out_object_confidences.write(all_object_confidences);
 
 }
 

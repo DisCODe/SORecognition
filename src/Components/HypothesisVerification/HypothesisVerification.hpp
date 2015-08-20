@@ -94,6 +94,8 @@ protected:
 	/// Input data stream containing vector of poses of clusters (matched models).
 	Base::DataStreamIn<std::vector<Types::HomogMatrix>, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex>  in_cluster_poses;
 
+	/// Input data stream containing vector of cluster confidences.
+	Base::DataStreamIn<std::vector<double> >  in_cluster_confidences;
 
 
 	/// Output data stream containing vector of object labels.
@@ -114,6 +116,8 @@ protected:
 	/// Output data stream containing vector of poses of object.
 	Base::DataStreamOut<std::vector<Types::HomogMatrix> >  out_object_poses;
 
+	/// Output data stream containing vector of object confidences.
+	Base::DataStreamOut<std::vector<double> >  out_object_confidences;
 
 
 	/// Property of the greedy verification algorithm: resolution?

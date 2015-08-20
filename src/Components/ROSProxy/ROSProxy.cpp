@@ -39,6 +39,7 @@ void ROSProxy::prepareInterface() {
 	registerStream("in_object_labels", &in_object_labels);
 	registerStream("in_object_poses", &in_object_poses);
 	registerStream("in_object_pose_covariances", &in_object_pose_covariances);
+	registerStream("in_object_confidences", &in_object_confidences);
 
 	// Register handlers
 	registerHandler("spin", boost::bind(&ROSProxy::spin, this));
@@ -46,6 +47,8 @@ void ROSProxy::prepareInterface() {
 
 	registerHandler("publishPoses", boost::bind(&ROSProxy::publishPoses, this));
 	addDependency("publishPoses", &in_object_poses);
+	addDependency("publishPoses", &in_object_confidences);
+	//addDependency("publishPoses", &in_object_pose_covariances); -> not obligatory.
 	//addDependency("publishPoses", &in_object_labels); -> not obligatory.
 }
 
@@ -60,7 +63,7 @@ bool ROSProxy::onInit() {
 	nh = new ros::NodeHandle;
 
 	// Create publisherobj.
-	pub = nh->advertise<object_recognition_msgs::RecognizedObject>("RecognizedObjects", 1000);
+	pub = nh->advertise<object_recognition_msgs::RecognizedObject>("recognized_objects", 1000);
 
 	return true;
 }
@@ -85,6 +88,8 @@ void ROSProxy::spin() {
 void ROSProxy::publishPoses() {
 	// Read object poses.
 	std::vector<Types::HomogMatrix> object_poses = in_object_poses.read();
+	std::vector<double> object_confidences = in_object_confidences.read();
+
 
 	// Read object labels.
 	std::vector< std::string> object_labels;
@@ -154,7 +159,7 @@ void ROSProxy::publishPoses() {
 		robj.type.db = "";
 
 		// float32 confidence TODO!
-		robj.confidence = 1;
+		robj.confidence = object_confidences[i];
 
 		// sensor_msgs/PointCloud2[] point_clouds - not used.
 

@@ -182,6 +182,9 @@
                         <sink>HypothesisVerification.in_clusters_scene_correspondences</sink>
                 </Source>
 
+                <Source name="CorrespondenceGrouping.out_cluster_confidences">
+                        <sink>HypothesisVerification.in_cluster_confidences</sink>
+                </Source>
 
                 <!--Cloud transformer outputs-->
 

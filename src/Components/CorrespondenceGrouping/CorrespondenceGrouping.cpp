@@ -57,6 +57,7 @@ void CorrespondenceGrouping::prepareInterface() {
 	registerStream("out_cluster_corners_xyz", &out_cluster_corners_xyz);
 	registerStream("out_clusters_scene_correspondences", &out_clusters_scene_correspondences);
 	registerStream("out_cluster_poses", &out_cluster_poses);
+	registerStream("out_cluster_confidences", &out_cluster_confidences);
 
 	// Register objects scene correspondences output streams.
 	//registerStream("in_objects_scene_correspondences", &out_clusters_scene_correspondences);
@@ -127,7 +128,7 @@ void CorrespondenceGrouping::groupCorrespondences() {
 	std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> all_cluster_clouds_xyzrgb;
 	std::vector< pcl::PointCloud<PointXYZSIFT>::Ptr> all_cluster_clouds_xyzsift;
 	std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr> all_cluster_corners_xyz;
-
+	std::vector<double> all_cluster_confidences;
 
 	// Iterate through model clouds.redbull_rgbdrainbow_kinect/
 	for(size_t imd=0; imd< model_clouds_xyzsift.size(); imd++) {
@@ -135,13 +136,11 @@ void CorrespondenceGrouping::groupCorrespondences() {
 
 		// Variables containing cluster data for given model.
 		std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > cluster_poses;
-		//std::vector<pcl::Correspondences> cluster_correspondences;
 		std::vector<pcl::CorrespondencesPtr> cluster_correspondences;
-
+		std::vector<double> cluster_confidences;
 
 		// Group correspondences for given model.
-		groupSingleModelCorrespondences(model_clouds_xyzsift[imd], scene_cloud_xyzsift, models_scene_correspondences[imd], cluster_poses, cluster_correspondences);
-
+		groupSingleModelCorrespondences(model_clouds_xyzsift[imd], scene_cloud_xyzsift, models_scene_correspondences[imd], cluster_poses, cluster_correspondences, cluster_confidences);
 
 		for (size_t igr = 0; igr < cluster_poses.size(); ++igr) {
 			CLOG(LDEBUG) << "Processing " <<igr<<"-th cluster";
@@ -167,6 +166,7 @@ void CorrespondenceGrouping::groupCorrespondences() {
 			all_clusters_labels.push_back(cname);
 			all_cluster_poses.push_back(hm);
 			all_cluster_correspondences.push_back(cluster_correspondences[igr]);
+			all_cluster_confidences.push_back(cluster_confidences[igr]);
 
 			// Copy and add XYZRGB, XYZSIFT and corners clouds.
 			pcl::PointCloud<pcl::PointXYZRGB>::Ptr tmp_cloud_xyzrgb (model_clouds_xyzrgb[imd]);
@@ -177,12 +177,13 @@ void CorrespondenceGrouping::groupCorrespondences() {
 
 			pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_cloud_xyz (model_corners_xyz[imd]);
 			all_cluster_corners_xyz.push_back(tmp_cloud_xyz);
+
 		}//: for model clusters
 
 	}//: for all models
 
 	// Display results.
-	printCorrespondencesGroups(all_cluster_poses, all_cluster_correspondences, all_clusters_labels);
+	printCorrespondencesGroups(all_cluster_poses, all_cluster_correspondences, all_clusters_labels, all_cluster_confidences);
 
 	// Write result to output ports.
 	out_cluster_labels.write(all_clusters_labels);
@@ -191,13 +192,13 @@ void CorrespondenceGrouping::groupCorrespondences() {
 	out_cluster_corners_xyz.write(all_cluster_corners_xyz);
 	out_clusters_scene_correspondences.write(all_cluster_correspondences);
 	out_cluster_poses.write(all_cluster_poses);
-
+	out_cluster_confidences.write(all_cluster_confidences);
 }
 
 
 
 
-void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<PointXYZSIFT>::Ptr model_clouds_xyzsift_, pcl::PointCloud<PointXYZSIFT>::Ptr cloud_xyzsift_, pcl::CorrespondencesPtr model_scene_correspondences_, std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > & cluster_poses_, std::vector<pcl::CorrespondencesPtr> & cluster_correspondences_) {
+void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<PointXYZSIFT>::Ptr model_clouds_xyzsift_, pcl::PointCloud<PointXYZSIFT>::Ptr cloud_xyzsift_, pcl::CorrespondencesPtr model_scene_correspondences_, std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > & cluster_poses_, std::vector<pcl::CorrespondencesPtr> & cluster_correspondences_, std::vector<double> & cluster_confidences_) {
 	CLOG(LTRACE) << "groupSingleModelCorrespondences";
 
 	CLOG(LDEBUG) << "Model cloud size=" << model_clouds_xyzsift_->size() << " Scene cloud size=" << cloud_xyzsift_->size() << " Model2Scene correspondences size=" << model_scene_correspondences_->size();
@@ -280,8 +281,13 @@ void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<Poi
 	// Perform correspondences grouping.
 	gc_clusterer.recognize (cluster_poses_, tmp_clusters_correspondences);
 
-	// Reenumerate index_matches - if clouds were resized.
+	// Compute confidence for each cluster.
+	for (size_t cori = 0; cori < tmp_clusters_correspondences.size(); ++cori){
+		double confidence = (double)tmp_clusters_correspondences[cori].size() / model_clouds_xyzsift_->size();
+		cluster_confidences_.push_back(confidence);
+	}//: for
 
+	// Reenumerate index_matches - if clouds were resized.
 	if (cloud_xyzsift_->size() > model_scene_correspondences_->size()) {
 		// For each cluster.
 		for (size_t clui = 0; clui < tmp_clusters_correspondences.size(); ++clui){
@@ -317,10 +323,10 @@ void CorrespondenceGrouping::groupSingleModelCorrespondences(pcl::PointCloud<Poi
 }
 
 
-void CorrespondenceGrouping::printCorrespondencesGroups (std::vector<Types::HomogMatrix> cluster_poses_, std::vector<pcl::CorrespondencesPtr> cluster_correspondences_, std::vector<std::string> cluster_labels_) {
+void CorrespondenceGrouping::printCorrespondencesGroups (std::vector<Types::HomogMatrix> cluster_poses_, std::vector<pcl::CorrespondencesPtr> cluster_correspondences_, std::vector<std::string> cluster_labels_, std::vector<double> cluster_confidences_) {
 	if (prop_print_cluster_statistics) {
 		for (size_t k = 0; k < cluster_poses_.size (); ++k){
-				  CLOG(LINFO) << "Group (" << k << "): " << cluster_labels_[k] << " (with " << cluster_correspondences_[k]->size () << " correspondences) \n" << cluster_poses_[k];
+				  CLOG(LINFO) << "Group (" << k << "): " << cluster_labels_[k] << " (with " << cluster_correspondences_[k]->size () << " correspondences and "<< cluster_confidences_[k]<<" confidence):\n" << cluster_poses_[k];
 		}//: for
 	}//: if
 }

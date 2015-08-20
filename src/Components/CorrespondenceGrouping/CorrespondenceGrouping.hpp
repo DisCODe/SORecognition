@@ -110,6 +110,9 @@ protected:
 	/// Output data stream containing vector of poses of clusters (matched models).
 	Base::DataStreamOut<std::vector<Types::HomogMatrix> >  out_cluster_poses;
 
+	/// Output data stream containing vector of cluster confidences.
+	Base::DataStreamOut<std::vector<double> >  out_cluster_confidences;
+
 
 	/// Property: the consensus set resolution, in metric units.
 	Base::Property<double> prop_cg_consensus_resolution;
@@ -123,10 +126,10 @@ protected:
 	void groupCorrespondences();
 
 	/// Group correspondences between a single model and scene.
-	void groupSingleModelCorrespondences(pcl::PointCloud<PointXYZSIFT>::Ptr model_clouds_xyzsift_, pcl::PointCloud<PointXYZSIFT>::Ptr cloud_xyzsift_, pcl::CorrespondencesPtr model_scene_correspondences_, std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > & cluster_poses_, std::vector<pcl::CorrespondencesPtr> & cluster_correspondences_);
+	void groupSingleModelCorrespondences(pcl::PointCloud<PointXYZSIFT>::Ptr model_clouds_xyzsift_, pcl::PointCloud<PointXYZSIFT>::Ptr cloud_xyzsift_, pcl::CorrespondencesPtr model_scene_correspondences_, std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > & cluster_poses_, std::vector<pcl::CorrespondencesPtr> & cluster_correspondences_, std::vector<double> & cluster_confidences_);
 
 	/// Prints results of clustering (number of clusters, their sizes, transformations etc.).
-	void printCorrespondencesGroups (std::vector<Types::HomogMatrix> cluster_poses_, std::vector<pcl::CorrespondencesPtr> cluster_correspondences_, std::vector<std::string> cluster_labels_);
+	void printCorrespondencesGroups (std::vector<Types::HomogMatrix> cluster_poses_, std::vector<pcl::CorrespondencesPtr> cluster_correspondences_, std::vector<std::string> cluster_labels_, std::vector<double> cluster_confidences_);
 
 };
 

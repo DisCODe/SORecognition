@@ -78,6 +78,10 @@ protected:
 	/// Input data stream containing vector of covariances of poses of objects/clusters/models .
 	Base::DataStreamIn<std::vector<boost::array<double, 36ul> >, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex>  in_object_pose_covariances;
 
+	/// Input data stream containing vector of object confidences.
+	Base::DataStreamIn<std::vector<double> >  in_object_confidences;
+
+
 	/// Property: title of the window.
 	Base::Property<std::string> prop_parent_frame;
 
