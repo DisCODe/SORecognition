@@ -9,7 +9,7 @@
 		
 		<Description>
                         <brief>Test for displaying scene along with models with grouped correspondences</brief>
-                        <full>PCL viewer displaying scene loaded from RGB-D images along with SOMs (SIFT Object Models) loaded from JSON files, matched against the scene and grouped into subsets.</full>
+						<full>PCL viewer displaying scene loaded from RGB-D images along with SOMs (SIFT Object Models) loaded from JSON files, matched against the scene, grouped into subsets, projected on the scene and validated with verification algorithm.</full>
 		</Description>
 	</Reference>
 	
@@ -166,14 +166,21 @@
                         <sink>CorrespondenceGrouping.in_model_clouds_xyzsift</sink>
                 </Source>
 
-                <Source name="SOMJSONReader.out_model_corners_xyz">
-                        <sink>CorrespondenceGrouping.in_model_corners_xyz</sink>
-                </Source>
+				<Source name="SOMJSONReader.out_model_labels">
+						<sink>CorrespondenceGrouping.in_model_labels</sink>
+				</Source>
 
-                <Source name="SOMJSONReader.out_model_labels">
-                        <sink>CorrespondenceGrouping.in_model_labels</sink>
-                </Source>
+				<Source name="SOMJSONReader.out_model_vertices_xyz">
+						<sink>CorrespondenceGrouping.in_model_vertices_xyz</sink>
+				</Source>
 
+				<Source name="SOMJSONReader.out_model_triangles">
+						<sink>CorrespondenceGrouping.in_model_triangles</sink>
+				</Source>
+
+				<Source name="SOMJSONReader.out_model_bounding_boxes">
+						<sink>CorrespondenceGrouping.in_model_bounding_boxes</sink>
+				</Source>
 
                 <Source name="CorrespondenceEstimation.out_models_scene_correspondences">
                         <sink>CorrespondenceGrouping.in_models_scene_correspondences</sink>
@@ -191,14 +198,23 @@
                         <sink>CloudTransformer.in_clouds_xyzsift</sink>
                 </Source>
 
-                <Source name="CorrespondenceGrouping.out_cluster_corners_xyz">
-                        <sink>CloudTransformer.in_clouds_xyz</sink>
-                </Source>
-
-                <Source name="CorrespondenceGrouping.out_cluster_poses">
+				<Source name="CorrespondenceGrouping.out_cluster_poses">
                         <sink>CloudTransformer.in_hms</sink>
                         <sink>HypothesisVerification.in_cluster_poses</sink>
                 </Source>
+
+
+				<Source name="CorrespondenceGrouping.out_cluster_vertices_xyz">
+						<sink>CloudTransformer.in_clouds_xyz</sink>
+				</Source>
+
+				<Source name="CorrespondenceGrouping.out_cluster_triangles">
+						<sink>HypothesisVerification.in_cluster_triangles</sink>
+				</Source>
+
+				<Source name="CorrespondenceGrouping.out_cluster_bounding_boxes">
+						<sink>HypothesisVerification.in_cluster_bounding_boxes</sink>
+				</Source>
 
 
                 <Source name="CorrespondenceGrouping.out_cluster_labels">
@@ -225,7 +241,7 @@
                 </Source>
 
                 <Source name="CloudTransformer.out_clouds_xyz">
-                        <sink>HypothesisVerification.in_cluster_corners_xyz</sink>
+						<sink>HypothesisVerification.in_cluster_vertices_xyz</sink>
                 </Source>
 
 
@@ -239,9 +255,19 @@
                         <sink>Viewer.in_object_clouds_xyzsift</sink>
                 </Source>
 
-                <Source name="HypothesisVerification.out_object_corners_xyz">
-                        <sink>Viewer.in_object_corners_xyz</sink>
+				<Source name="HypothesisVerification.out_object_vertices_xyz">
+						<sink>Viewer.in_object_vertices_xyz</sink>
                 </Source>
+
+				<Source name="HypothesisVerification.out_object_triangles">
+						<sink>Viewer.in_object_triangles</sink>
+				</Source>
+
+				<Source name="HypothesisVerification.out_object_bounding_boxes">
+						<sink>Viewer.in_object_bounding_boxes</sink>
+				</Source>
+
+
 
                 <Source name="HypothesisVerification.out_object_labels">
                         <sink>Viewer.in_object_labels</sink>

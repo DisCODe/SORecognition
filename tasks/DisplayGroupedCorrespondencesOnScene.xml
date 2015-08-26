@@ -9,7 +9,7 @@
 		
 		<Description>
                         <brief>Test for displaying scene along with models with grouped correspondences</brief>
-                        <full>PCL viewer displaying scene loaded from RGB-D images along with SOMs (SIFT Object Models) loaded from JSON files, matched against the scene and grouped into subsets.</full>
+						<full>PCL viewer displaying scene loaded from RGB-D images along with SOMs (SIFT Object Models) loaded from JSON files, matched against the scene, grouped into subsets. The resulting hypothesis are finally projected on the scene.</full>
 		</Description>
 	</Reference>
 	
@@ -93,7 +93,7 @@
 		<Subtask name="Visualisation">
                         <Executor name="Exec2" period="0.2">
                                 <Component name="Viewer" type="PCL:CloudViewer" priority="100" bump="0">
-                                    <param name="coordinate_system">false</param>
+								<param name="scene.display_coordinate_system">false</param>
 				</Component>
 			</Executor>
 		</Subtask>
@@ -162,14 +162,21 @@
                         <sink>CorrespondenceGrouping.in_model_clouds_xyzsift</sink>
                 </Source>
 
-                <Source name="SOMJSONReader.out_model_corners_xyz">
-                        <sink>CorrespondenceGrouping.in_model_corners_xyz</sink>
-                </Source>
-
                 <Source name="SOMJSONReader.out_model_labels">
                         <sink>CorrespondenceGrouping.in_model_labels</sink>
                 </Source>
 
+				<Source name="SOMJSONReader.out_model_vertices_xyz">
+						<sink>CorrespondenceGrouping.in_model_vertices_xyz</sink>
+				</Source>
+
+				<Source name="SOMJSONReader.out_model_triangles">
+						<sink>CorrespondenceGrouping.in_model_triangles</sink>
+				</Source>
+
+				<Source name="SOMJSONReader.out_model_bounding_boxes">
+						<sink>CorrespondenceGrouping.in_model_bounding_boxes</sink>
+				</Source>
 
                 <Source name="CorrespondenceEstimation.out_models_scene_correspondences">
                         <sink>CorrespondenceGrouping.in_models_scene_correspondences</sink>
@@ -187,11 +194,19 @@
                         <sink>CloudTransformer.in_clouds_xyzsift</sink>
                 </Source>
 
-                <Source name="CorrespondenceGrouping.out_cluster_corners_xyz">
+				<Source name="CorrespondenceGrouping.out_cluster_vertices_xyz">
                         <sink>CloudTransformer.in_clouds_xyz</sink>
                 </Source>
 
-                <Source name="CorrespondenceGrouping.out_cluster_poses">
+				<Source name="CorrespondenceGrouping.out_cluster_triangles">
+						<sink>Viewer.in_object_triangles</sink>
+				</Source>
+
+				<Source name="CorrespondenceGrouping.out_model_bounding_boxes">
+						<sink>Viewer.in_object_bounding_boxes</sink>
+				</Source>
+
+				<Source name="CorrespondenceGrouping.out_cluster_poses">
                         <sink>CloudTransformer.in_hms</sink>
                         <sink>Viewer.in_object_poses</sink>
                 </Source>
@@ -209,7 +224,7 @@
                 </Source>
 
                 <Source name="CloudTransformer.out_clouds_xyz">
-                        <sink>Viewer.in_object_corners_xyz</sink>
+						<sink>Viewer.in_object_vertices_xyz</sink>
                 </Source>
 
                 <Source name="CorrespondenceGrouping.out_cluster_labels">

@@ -64,8 +64,8 @@
 		
 		<Subtask name="Visualisation">
                         <Executor name="Exec2" period="0.2">
-                                <Component name="Window" type="PCL:CloudViewer" priority="100" bump="0">
-                                    <param name="coordinate_system">false</param>
+								<Component name="Viewer" type="PCL:CloudViewer" priority="100" bump="0">
+									<param name="scene.display_coordinate_system">false</param>
 				</Component>
 			</Executor>
 		</Subtask>
@@ -106,28 +106,36 @@
                 </Source>
 
                 <Source name="Converter.out_cloud_xyzrgb">
-                        <sink>Window.in_scene_cloud_xyzrgb</sink>
+						<sink>Viewer.in_scene_cloud_xyzrgb</sink>
                 </Source>
 
                 <Source name="FeatureCloudConverter.out_cloud_xyzsift">
-                        <sink>Window.in_scene_cloud_xyzsift</sink>
+						<sink>Viewer.in_scene_cloud_xyzsift</sink>
                 </Source>
 
                 <!--Models-->
 
                 <Source name="SOMJSONReader.out_model_clouds_xyzrgb">
-                        <sink>Window.in_om_clouds_xyzrgb</sink>
+						<sink>Viewer.in_object_clouds_xyzrgb</sink>
                 </Source>
 
                 <Source name="SOMJSONReader.out_model_clouds_xyzsift">
-                        <sink>Window.in_om_clouds_xyzsift</sink>
+						<sink>Viewer.in_object_clouds_xyzsift</sink>
                 </Source>
 
-                <Source name="SOMJSONReader.out_model_corners_xyz">
-                        <sink>Window.in_om_corners_xyz</sink>
-                </Source>
+				<Source name="SOMJSONReader.out_model_vertices_xyz">
+						<sink>Viewer.in_object_vertices_xyz</sink>
+				</Source>
 
-       </DataStreams>
+				<Source name="SOMJSONReader.out_model_triangles">
+						<sink>Viewer.in_object_triangles</sink>
+				</Source>
+
+				<Source name="SOMJSONReader.out_model_bounding_boxes">
+						<sink>Viewer.in_object_bounding_boxes</sink>
+				</Source>
+
+	   </DataStreams>
 </Task>
 
 

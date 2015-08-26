@@ -45,7 +45,9 @@ void CorrespondenceGrouping::prepareInterface() {
 	registerStream("in_model_labels", &in_model_labels);
 	registerStream("in_model_clouds_xyzrgb", &in_model_clouds_xyzrgb);
 	registerStream("in_model_clouds_xyzsift", &in_model_clouds_xyzsift);
-	registerStream("in_model_corners_xyz", &in_model_corners_xyz);
+	registerStream("in_model_vertices_xyz", &in_model_vertices_xyz);
+	registerStream("in_model_bounding_boxes", &in_model_bounding_boxes);
+	registerStream("in_model_triangles", &in_model_triangles);
 
 	// Register cloud model correspondences input streams.
 	registerStream("in_models_scene_correspondences", &in_models_scene_correspondences);
@@ -54,7 +56,9 @@ void CorrespondenceGrouping::prepareInterface() {
 	registerStream("out_cluster_labels", &out_cluster_labels);
 	registerStream("out_cluster_clouds_xyzrgb", &out_cluster_clouds_xyzrgb);
 	registerStream("out_cluster_clouds_xyzsift", &out_cluster_clouds_xyzsift);
-	registerStream("out_cluster_corners_xyz", &out_cluster_corners_xyz);
+	registerStream("out_cluster_vertices_xyz", &out_cluster_vertices_xyz);
+	registerStream("out_cluster_bounding_boxes", &out_cluster_bounding_boxes);
+	registerStream("out_cluster_triangles", &out_cluster_triangles);
 	registerStream("out_clusters_scene_correspondences", &out_clusters_scene_correspondences);
 	registerStream("out_cluster_poses", &out_cluster_poses);
 	registerStream("out_cluster_confidences", &out_cluster_confidences);
@@ -65,12 +69,13 @@ void CorrespondenceGrouping::prepareInterface() {
 
 
 	registerHandler("groupCorrespondences", boost::bind(&CorrespondenceGrouping::groupCorrespondences, this));
+	// Add OBLIGATORY dependences!
 	addDependency("groupCorrespondences", &in_cloud_xyzsift);
 	addDependency("groupCorrespondences", &in_model_clouds_xyzrgb);
 	addDependency("groupCorrespondences", &in_model_clouds_xyzsift);
-	addDependency("groupCorrespondences", &in_model_corners_xyz);
 	addDependency("groupCorrespondences", &in_models_scene_correspondences);
 //	addDependency("groupCorrespondences", &in_model_labels);
+//	addDependency("groupCorrespondences", &in_model_vertices_xyz);
 
 }
 
@@ -97,11 +102,10 @@ void CorrespondenceGrouping::groupCorrespondences() {
 
 	// This is executed when all required data streams are present - no need to check them! ASIDE of in_model_labels, which is not required!
 
-	// Read inputs.
+	// Read OBLIGATORY inputs.
 	pcl::PointCloud<PointXYZSIFT>::Ptr scene_cloud_xyzsift = in_cloud_xyzsift.read();
 	std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> model_clouds_xyzrgb = in_model_clouds_xyzrgb.read();
 	std::vector<pcl::PointCloud<PointXYZSIFT>::Ptr> model_clouds_xyzsift = in_model_clouds_xyzsift.read();
-	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> model_corners_xyz = in_model_corners_xyz.read();
 	std::vector<pcl::CorrespondencesPtr> models_scene_correspondences = in_models_scene_correspondences.read();
 
 	// Temporary variables containing names.
@@ -120,6 +124,20 @@ void CorrespondenceGrouping::groupCorrespondences() {
 		labels.push_back(cname);
 	}//: while
 
+	// Read MANDATORY inputs.
+	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> model_vertices_xyz;
+	if (!in_model_vertices_xyz.empty())
+		model_vertices_xyz = in_model_vertices_xyz.read();
+
+	std::vector<std::vector<pcl::Vertices> > model_bounding_boxes;
+	if (!in_model_bounding_boxes.empty())
+		model_bounding_boxes = in_model_bounding_boxes.read();
+
+	std::vector<std::vector<pcl::Vertices> > model_triangles;
+	if (!in_model_triangles.empty())
+		model_triangles = in_model_triangles.read();
+
+
 	// Temporary variables - for storing returned data.
 	std::vector<std::string> all_clusters_labels;
 	std::vector<Types::HomogMatrix> all_cluster_poses;
@@ -127,8 +145,12 @@ void CorrespondenceGrouping::groupCorrespondences() {
 
 	std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> all_cluster_clouds_xyzrgb;
 	std::vector< pcl::PointCloud<PointXYZSIFT>::Ptr> all_cluster_clouds_xyzsift;
-	std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr> all_cluster_corners_xyz;
 	std::vector<double> all_cluster_confidences;
+
+	std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr> all_cluster_vertices_xyz;
+	std::vector<std::vector<pcl::Vertices> > all_cluster_bounding_boxes;
+	std::vector<std::vector<pcl::Vertices> > all_cluster_triangles;
+
 
 	// Iterate through model clouds.redbull_rgbdrainbow_kinect/
 	for(size_t imd=0; imd< model_clouds_xyzsift.size(); imd++) {
@@ -168,15 +190,28 @@ void CorrespondenceGrouping::groupCorrespondences() {
 			all_cluster_correspondences.push_back(cluster_correspondences[igr]);
 			all_cluster_confidences.push_back(cluster_confidences[igr]);
 
-			// Copy and add XYZRGB, XYZSIFT and corners clouds.
+			// Copy and add OBLIGATORY XYZRGB, XYZSIFT clouds.
 			pcl::PointCloud<pcl::PointXYZRGB>::Ptr tmp_cloud_xyzrgb (model_clouds_xyzrgb[imd]);
 			all_cluster_clouds_xyzrgb.push_back(tmp_cloud_xyzrgb);
 
 			pcl::PointCloud<PointXYZSIFT>::Ptr tmp_cloud_xyzsift (model_clouds_xyzsift[imd]);
 			all_cluster_clouds_xyzsift.push_back(tmp_cloud_xyzsift);
 
-			pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_cloud_xyz (model_corners_xyz[imd]);
-			all_cluster_corners_xyz.push_back(tmp_cloud_xyz);
+			// Copy and add MANDATORY data.
+			if (model_vertices_xyz.size() > imd){
+				pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_cloud_xyz (model_vertices_xyz[imd]);
+				all_cluster_vertices_xyz.push_back(tmp_cloud_xyz);
+			}//: if
+
+			if (model_bounding_boxes.size() > imd){
+				std::vector<pcl::Vertices> tmp_bounding_boxes = model_bounding_boxes[imd];
+				all_cluster_bounding_boxes.push_back(tmp_bounding_boxes);
+			}//: if
+
+			if (model_triangles.size() > imd){
+				std::vector<pcl::Vertices> tmp_triangles = model_triangles[imd];
+				all_cluster_triangles.push_back(tmp_triangles);
+			}//: if
 
 		}//: for model clusters
 
@@ -185,14 +220,18 @@ void CorrespondenceGrouping::groupCorrespondences() {
 	// Display results.
 	printCorrespondencesGroups(all_cluster_poses, all_cluster_correspondences, all_clusters_labels, all_cluster_confidences);
 
-	// Write result to output ports.
+	// Write OBLIGATORY result to output ports.
 	out_cluster_labels.write(all_clusters_labels);
 	out_cluster_clouds_xyzrgb.write(all_cluster_clouds_xyzrgb);
 	out_cluster_clouds_xyzsift.write(all_cluster_clouds_xyzsift);
-	out_cluster_corners_xyz.write(all_cluster_corners_xyz);
 	out_clusters_scene_correspondences.write(all_cluster_correspondences);
 	out_cluster_poses.write(all_cluster_poses);
 	out_cluster_confidences.write(all_cluster_confidences);
+
+	// Write MANDATORY result to output ports...? to write or not to write?
+	out_cluster_vertices_xyz.write(all_cluster_vertices_xyz);
+	out_cluster_bounding_boxes.write(all_cluster_bounding_boxes);
+	out_cluster_triangles.write(all_cluster_triangles);
 }
 
 

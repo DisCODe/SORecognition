@@ -85,8 +85,14 @@ protected:
 	/// Input data stream containing vector of clusters (matched models) XYZSIFT clouds.
 	Base::DataStreamIn <std::vector< pcl::PointCloud<PointXYZSIFT>::Ptr>, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_cluster_clouds_xyzsift;
 
-	/// Input data stream containing vector of clusters (matched models) corners (each being a cloud containing 8 XYZ points).
-	Base::DataStreamIn <std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr>, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_cluster_corners_xyz;
+	/// Input data stream containing vector of clusters (matched models) vertices (convex hulls).
+	Base::DataStreamIn <std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr>, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_cluster_vertices_xyz;
+
+	/// Input data stream containing vector of clusters meshes - build on top of vertices.
+	Base::DataStreamIn <std::vector< std::vector<pcl::Vertices> >, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_cluster_triangles;
+
+	/// Input data stream containing vector of clusters bounding boxes - build on top of vertices.
+	Base::DataStreamIn <std::vector<std::vector<pcl::Vertices> >, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_cluster_bounding_boxes;
 
 	/// Input data stream containing vector of corespondences beetwen objects and scene clouds (clusters).
 	Base::DataStreamIn<std::vector<pcl::CorrespondencesPtr>, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_clusters_scene_correspondences;
@@ -107,8 +113,14 @@ protected:
 	/// Output data stream containing vector of object XYZSIFT clouds.
 	Base::DataStreamOut <std::vector< pcl::PointCloud<PointXYZSIFT>::Ptr> > out_object_clouds_xyzsift;
 
-	/// Output data stream containing vector of object corners (each being a cloud containing 8 XYZ points).
-	Base::DataStreamOut <std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr> > out_object_corners_xyz;
+	/// Output data stream containing vector of object vertices (convex hulls).
+	Base::DataStreamOut <std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr> > out_object_vertices_xyz;
+
+	/// Output data stream containing vector of object meshes - build on top of vertices.
+	Base::DataStreamOut <std::vector< std::vector<pcl::Vertices> > > out_object_triangles;
+
+	/// Output data stream containing vector of object bounding boxes - build on top of vertices.
+	Base::DataStreamOut <std::vector<std::vector<pcl::Vertices> > > out_object_bounding_boxes;
 
 	/// Output data stream containing vector of corespondences beetwen objects and scene clouds.
 	Base::DataStreamOut<std::vector<pcl::CorrespondencesPtr> > out_objects_scene_correspondences;
