@@ -40,7 +40,7 @@ Tasks for object recognition (scene loaded from RGB-D sequence):
 
 Tasks for object recognition (from kinect):
 
-   * __KinectDisplayRecognizedObjectsOnScene__ - PCL viewer displaying scene loaded from RGB-D images along with SOMs (SIFT Object Models) loaded from JSON files, matched against the scene, grouped into subsets, projected on the scene and validated with verification algorithm.
+   * __KinectDisplayRecognizedObjectsOnScene__ - PCL viewer displaying scene acquired from Kinect along with SOMs (SIFT Object Models) loaded from JSON files, matched against the scene, grouped into subsets, projected on the scene and validated with verification algorithm.
 
 
 Tasks for testing/visualization of model-scene correspondences (scene loaded from RGB-D sequence):
@@ -52,9 +52,9 @@ Tasks for testing/visualization of model-scene correspondences (scene loaded fro
 
 Tasks for testing/visualization of model-scene correspondences (scene from Kinect):
 
-   * __KinectDisplayGroupedCorrespondencesOnScene__ -
+   * __KinectDisplayGroupedCorrespondencesOnScene__ - PCL viewer displaying scene acquired from Kinect along with SOMs (SIFT Object Models) loaded from JSON files, matched against the scene and grouped into clusters. The resulting hypotheses are finally projected on the scene.
 
-   * __KinectDisplayModelsSceneCorrespondences__ -
+   * __KinectDisplayModelsSceneCorrespondences__ - PCL viewer displaying scene acquired from Kinect along with SOMs (SIFT Object Models) loaded from JSON files and matched against the scene.
 
 
 Tasks for testing/visualization of scene/models purposes (scene loaded from RGB-D sequence):
@@ -63,6 +63,7 @@ Tasks for testing/visualization of scene/models purposes (scene loaded from RGB-
 
    * __DisplayJSOMModelsOnScene__ - PCL viewer displaying scene loaded from RGB-D images along with SOMs (SIFT Object Models) loaded from JSON files.
 
+   * __KinectRGBDViewer__ - Displays RGB and Depth images acquired from Kinect (task from DCL CameraNUI!)
 
 Maintainer
 ----------

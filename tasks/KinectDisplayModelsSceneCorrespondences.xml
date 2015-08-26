@@ -8,8 +8,8 @@
 		</Author>
 		
 		<Description>
-                        <brief>Test for displaying scene along with objects</brief>
-                        <full>PCL viewer displaying scene loaded from RGB-D images along with SOMs (SIFT Object Models) loaded from JSON files.</full>
+						<brief>Test for displaying scene along with object models and correspondences between them.</brief>
+						<full>PCL viewer displaying scene acquired from Kinect along with SOMs (SIFT Object Models) loaded from JSON files and matched against the scene.</full>
 		</Description>
 	</Reference>
 	
@@ -105,46 +105,52 @@
                         <sink>FeatureCloudConverter.in_depth</sink>
                 </Source>
 
-                <!--Proccesing-->
-                <Source name="SIFT.out_descriptors">
-                        <sink>FeatureCloudConverter.in_descriptors</sink>
-                </Source>
+				<!--Proccesing-->
+				<Source name="SIFT.out_descriptors">
+						<sink>FeatureCloudConverter.in_descriptors</sink>
+				</Source>
 
-                <Source name="SIFT.out_features">
-                        <sink>FeatureCloudConverter.in_features</sink>
-                </Source>
+				<Source name="SIFT.out_features">
+						<sink>FeatureCloudConverter.in_features</sink>
+				</Source>
 
-                <Source name="Converter.out_cloud_xyzrgb">
-                        <sink>Viewer.in_scene_cloud_xyzrgb</sink>
-                </Source>
+				<Source name="Converter.out_cloud_xyzrgb">
+						<sink>Viewer.in_scene_cloud_xyzrgb</sink>
+				</Source>
 
-                <Source name="FeatureCloudConverter.out_cloud_xyzsift">
-                        <sink>Viewer.in_scene_cloud_xyzsift</sink>
-                        <sink>CorrespondenceEstimation.in_scene_cloud_xyzsift</sink><!---->
-                </Source>
+				<Source name="FeatureCloudConverter.out_cloud_xyzsift">
+						<sink>Viewer.in_scene_cloud_xyzsift</sink>
+						<sink>CorrespondenceEstimation.in_scene_cloud_xyzsift</sink><!---->
+				</Source>
 
-                <!--Models-->
+				<!--Models-->
 
-                <Source name="SOMJSONReader.out_model_clouds_xyzrgb">
-                        <sink>Viewer.in_object_clouds_xyzrgb</sink>
-                </Source>
+				<Source name="SOMJSONReader.out_model_clouds_xyzrgb">
+						<sink>Viewer.in_object_clouds_xyzrgb</sink>
+				</Source>
 
-                <Source name="SOMJSONReader.out_model_clouds_xyzsift">
-                        <sink>Viewer.in_object_clouds_xyzsift</sink>
-                        <sink>CorrespondenceEstimation.in_model_clouds_xyzsift</sink><!---->
-                </Source>
+				<Source name="SOMJSONReader.out_model_clouds_xyzsift">
+						<sink>Viewer.in_object_clouds_xyzsift</sink>
+						<sink>CorrespondenceEstimation.in_model_clouds_xyzsift</sink><!---->
+				</Source>
 
-                <Source name="SOMJSONReader.out_model_corners_xyz">
-                        <sink>Viewer.in_object_corners_xyz</sink>
-                </Source>
+				<Source name="SOMJSONReader.out_model_vertices_xyz">
+						<sink>Viewer.in_object_vertices_xyz</sink>
+				</Source>
 
-                <Source name="SOMJSONReader.out_model_labels">
-                        <sink>Viewer.in_object_labels</sink>
-                </Source>
+				<Source name="SOMJSONReader.out_model_triangles">
+						<sink>Viewer.in_object_triangles</sink>
+				</Source>
 
-                <Source name="CorrespondenceEstimation.out_models_scene_correspondences">
-                        <sink>Viewer.in_objects_scene_correspondences</sink>
-                </Source> <!---->
+				<Source name="SOMJSONReader.out_model_bounding_boxes">
+						<sink>Viewer.in_object_bounding_boxes</sink>
+				</Source>
+
+				<!--Correspondences-->
+
+				<Source name="CorrespondenceEstimation.out_models_scene_correspondences">
+						<sink>Viewer.in_objects_scene_correspondences</sink>
+				</Source> <!---->
 
 
        </DataStreams>
