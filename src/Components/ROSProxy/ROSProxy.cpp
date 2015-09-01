@@ -12,9 +12,15 @@
 
 #include <boost/bind.hpp>
 
+#include <pcl/common/transforms.h>
+#include <pcl/PolygonMesh.h>
+
 #include <tf_conversions/tf_eigen.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <object_recognition_msgs/RecognizedObject.h>
+
+#include <tf/transform_datatypes.h>
+#include <geometry_msgs/Point.h>
 
 
 namespace Processors {
@@ -36,10 +42,13 @@ ROSProxy::~ROSProxy() {
 
 void ROSProxy::prepareInterface() {
 	// Register data streams.
-	registerStream("in_object_labels", &in_object_labels);
 	registerStream("in_object_poses", &in_object_poses);
-	registerStream("in_object_pose_covariances", &in_object_pose_covariances);
 	registerStream("in_object_confidences", &in_object_confidences);
+	registerStream("in_object_vertices_xyz", &in_object_vertices_xyz);
+	registerStream("in_object_triangles", &in_object_triangles);
+
+	registerStream("in_object_pose_covariances", &in_object_pose_covariances);
+	registerStream("in_object_labels", &in_object_labels);
 
 	// Register handlers
 	registerHandler("spin", boost::bind(&ROSProxy::spin, this));
@@ -48,6 +57,8 @@ void ROSProxy::prepareInterface() {
 	registerHandler("publishPoses", boost::bind(&ROSProxy::publishPoses, this));
 	addDependency("publishPoses", &in_object_poses);
 	addDependency("publishPoses", &in_object_confidences);
+	addDependency("publishPoses", &in_object_vertices_xyz);
+	addDependency("publishPoses", &in_object_triangles);
 	//addDependency("publishPoses", &in_object_pose_covariances); -> not obligatory.
 	//addDependency("publishPoses", &in_object_labels); -> not obligatory.
 }
@@ -85,10 +96,35 @@ void ROSProxy::spin() {
 		ros::spinOnce();
 }
 
+
+
+
+/// Conversion from PointXYZ to geometry_msgs::Point
+static inline geometry_msgs::Point pointToMsg(const pcl::PointXYZ& pt_xyz_){
+  geometry_msgs::Point pt;
+  pt.x = pt_xyz_.x;
+  pt.y = pt_xyz_.y;
+  pt.z = pt_xyz_.z;
+
+  return pt;
+}
+
+
+static inline shape_msgs::MeshTriangle triangleToMsg(const pcl::Vertices& triangle_){
+	shape_msgs::MeshTriangle mt;
+	mt.vertex_indices[0] = triangle_.vertices[0];
+	mt.vertex_indices[1] = triangle_.vertices[1];
+	mt.vertex_indices[2] = triangle_.vertices[2];
+	return mt;
+}
+
+
 void ROSProxy::publishPoses() {
-	// Read object poses.
+	// Read OBLIGATORY data ports.
 	std::vector<Types::HomogMatrix> object_poses = in_object_poses.read();
 	std::vector<double> object_confidences = in_object_confidences.read();
+	std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr> object_vertices = in_object_vertices_xyz.read();
+	std::vector< std::vector<pcl::Vertices> > object_triangles = in_object_triangles.read();
 
 
 	// Read object labels.
@@ -111,7 +147,7 @@ void ROSProxy::publishPoses() {
 		object_pose_covariances = in_object_pose_covariances.read();
 
 	i=0;
-	// Create "default" measurement noise matrix.
+	// Create "default" measurement (sensor) noise matrix.
 	cv::Mat measurementNoiseCov (cv::Mat::eye(6, 6, CV_64F));
 	cv::setIdentity(measurementNoiseCov, cv::Scalar::all(1e-4));
 	// Fill vector of covariance matrix.
@@ -127,17 +163,17 @@ void ROSProxy::publishPoses() {
 	// Broadcasterobj.
 	//static tf::TransformBroadcaster br;
 
-	// Publish poses 1 by 1.
-	for (size_t i = 0; i < object_poses.size(); ++i) {
-		CLOG(LDEBUG) << "Sending transform: " << object_poses[i];
+	// Publish objects 1 by 1.
+	for (size_t obj_i = 0; obj_i < object_poses.size(); ++obj_i) {
+		CLOG(LDEBUG) << "Sending transform: " << object_poses[obj_i];
 
 		// Transform pose to message.
-		Eigen::Affine3d pose = object_poses[i];
+		Eigen::Affine3d pose = object_poses[obj_i];
 		geometry_msgs::Pose msg_pose;
 		tf::poseEigenToMsg(pose, msg_pose);
 
 		// Generate TF name - cut out the numbers!
-		std::string name = "/"+	object_labels[i].substr(0,object_labels[i].rfind("_"));
+		std::string name = "/"+	object_labels[obj_i].substr(0,object_labels[obj_i].rfind("_"));
 
 		// Fill header structure - std_msgs/Header header
 		std_msgs::Header hdr;
@@ -159,11 +195,28 @@ void ROSProxy::publishPoses() {
 		robj.type.db = "";
 
 		// float32 confidence TODO!
-		robj.confidence = object_confidences[i];
+		robj.confidence = object_confidences[obj_i];
 
 		// sensor_msgs/PointCloud2[] point_clouds - not used.
 
 		// shape_msgs/Mesh bounding_mesh TODO!
+		// Set mesh vertices.
+		//pcl::toPCLPointCloud2(*object_vertices[i], robj.bounding_mesh.vertices);
+		//robj.bounding_mesh.vertices.push_back(object_vertices[i]->at(0));
+		//pcl::PointXYZ bt_v(1,2,3);
+		//geometry_msgs::Point msg_v = pointToMsg(bt_v);
+
+		// Add vertices to mesh - ONE BY ONE:]
+		for (size_t pt_i=0; pt_i < object_vertices[obj_i]->size(); pt_i++) {
+			robj.bounding_mesh.vertices.push_back(pointToMsg(object_vertices[obj_i]->at(pt_i)));
+		}//: for
+
+		// Set mesh polygon.
+		//robj.bounding_mesh.triangles = object_triangles[i];
+		// Add triangles to mesh - ONE BY ONE:]
+		for (size_t tr_i=0; tr_i < object_triangles[obj_i].size(); tr_i++) {
+			robj.bounding_mesh.triangles.push_back(triangleToMsg(object_triangles[obj_i].at(tr_i)));
+		}//: for
 
 		// geometry_msgs/Point[] bounding_contours - not used.
 
@@ -174,7 +227,7 @@ void ROSProxy::publishPoses() {
 		// geometry_msgs/Pose pose
 		robj.pose.pose.pose = msg_pose;
 		// float64[36] covariance
-		robj.pose.pose.covariance = object_pose_covariances[i];
+		robj.pose.pose.covariance = object_pose_covariances[obj_i];
 
 		// Publish object data.
 		pub.publish(robj);

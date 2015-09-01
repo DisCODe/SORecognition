@@ -29,9 +29,9 @@ Registration of models of objects from stereo camera images:
 
 Tasks for object recognition - DisCODe working as ROS node:
 
-   * __KinectRecognizeObjectsROS__ -
+   * __KinectRecognizeObjectsROS__ - PCL viewer displaying scene acquired from Kinect along with SOMs (SIFT Object Models) loaded from JSON files, matched against the scene and grouped into clusters, verified and published to ROS by proxy.
 
-   * __SequenceRecognizeObjectsROS__ -
+   * __SequenceRecognizeObjectsROS__ - PCL viewer displaying scene loaded from RGB-D images along with SOMs (SIFT Object Models) loaded from JSON files, matched against the scene and grouped into subsets, validated and published by ROS proxy.
 
 
 Tasks for object recognition (scene loaded from RGB-D sequence):

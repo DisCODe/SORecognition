@@ -55,7 +55,7 @@
 
                             <!--Models-->
                             <Component name="SOMJSONReader" type="SIFTObjectModel:SOMJSONReader" priority="10" bump="0">
-                                    <param name="filenames">/home/mlaszkow/DCL/TexturedSolidGeneration/data/ahmad1.json;/home/mlaszkow/DCL/TexturedSolidGeneration/data/herbapol_mieta1.json</param>
+                                    <param name="filenames">/home/tkornuta/discode_ecovi/DCL/SORecognition/data/models/ahmad1.json;/home/tkornuta/discode_ecovi/DCL/SORecognition/data/models/herbapol_mieta1.json;/home/tkornuta/discode_ecovi/DCL/SORecognition/data/models/lipton_earl_grey_classic1.json;/home/tkornuta/discode_ecovi/DCL/SORecognition/data/models/lipton_green_tea_citrus_model.json</param>
                             </Component>
 
                             <!--Processing-->
@@ -169,8 +169,8 @@
                         <sink>CorrespondenceGrouping.in_model_clouds_xyzsift</sink>
                 </Source>
 
-                <Source name="SOMJSONReader.out_model_corners_xyz">
-                        <sink>CorrespondenceGrouping.in_model_corners_xyz</sink>
+                <Source name="SOMJSONReader.out_model_vertices_xyz">
+                        <sink>CorrespondenceGrouping.in_model_vertices_xyz</sink>
                 </Source>
 
                 <Source name="SOMJSONReader.out_model_labels">
@@ -194,7 +194,7 @@
                         <sink>CloudTransformer.in_clouds_xyzsift</sink>
                 </Source>
 
-                <Source name="CorrespondenceGrouping.out_cluster_corners_xyz">
+                <Source name="CorrespondenceGrouping.out_cluster_vertices_xyz">
                         <sink>CloudTransformer.in_clouds_xyz</sink>
                 </Source>
 
@@ -227,7 +227,7 @@
                 </Source>
 
                 <Source name="CloudTransformer.out_clouds_xyz">
-                        <sink>HypothesisVerification.in_cluster_corners_xyz</sink>
+                        <sink>HypothesisVerification.in_cluster_vertices_xyz</sink>
                 </Source>
 
 
@@ -241,8 +241,8 @@
                         <sink>Viewer.in_object_clouds_xyzsift</sink>
                 </Source>
 
-                <Source name="HypothesisVerification.out_object_corners_xyz">
-                        <sink>Viewer.in_object_corners_xyz</sink>
+                <Source name="HypothesisVerification.out_object_vertices_xyz">
+                        <sink>Viewer.in_object_vertices_xyz</sink>
                 </Source>
 
                 <Source name="HypothesisVerification.out_object_labels">

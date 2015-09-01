@@ -14,6 +14,9 @@
 #include "EventHandler2.hpp"
 
 #include <Types/HomogMatrix.hpp>
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
+#include <pcl/Vertices.h>
 
 #include <ros/ros.h>
 #include <tf/transform_broadcaster.h>
@@ -69,13 +72,19 @@ protected:
 	bool onStop();
 
 
-	/// Input data stream containing vector of objects/clusters/models ids.
+	/// Input data stream containing vector of objects ids.
 	Base::DataStreamIn <std::vector< std::string>, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_object_labels;
 
-	/// Input data stream containing vector of poses of objects/clusters/models.
+	/// Input data stream containing vector of poses of objects.
 	Base::DataStreamIn<std::vector<Types::HomogMatrix>, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex>  in_object_poses;
 
-	/// Input data stream containing vector of covariances of poses of objects/clusters/models .
+	/// Input data stream containing vector of object vertices (used by polygons and boundingboxes).
+	Base::DataStreamIn <std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr>, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_object_vertices_xyz;
+
+	/// Input data stream containing vector of object meshes - build on top of vertices.
+	Base::DataStreamIn <std::vector< std::vector<pcl::Vertices> >, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_object_triangles;
+
+	/// Input data stream containing vector of covariances of poses of objects.
 	Base::DataStreamIn<std::vector<boost::array<double, 36ul> >, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex>  in_object_pose_covariances;
 
 	/// Input data stream containing vector of object confidences.

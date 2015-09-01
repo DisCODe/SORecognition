@@ -39,7 +39,7 @@
 
                             <!--Models-->
                             <Component name="SOMJSONReader" type="SIFTObjectModel:SOMJSONReader" priority="10" bump="0">
-                                    <param name="filenames">/home/mlaszkow/DCL/TexturedSolidGeneration/data/ahmad1.json;/home/mlaszkow/DCL/TexturedSolidGeneration/data/herbapol_mieta1.json</param>
+<param name="filenames">/home/tkornuta/discode_ecovi/DCL/SORecognition/data/models/ahmad1.json;/home/tkornuta/discode_ecovi/DCL/SORecognition/data/models/herbapol_mieta1.json;/home/tkornuta/discode_ecovi/DCL/SORecognition/data/models/lipton_earl_grey_classic1.json;/home/tkornuta/discode_ecovi/DCL/SORecognition/data/models/lipton_green_tea_citrus_model.json</param>
                             </Component>
 
                             <!--Processing-->
